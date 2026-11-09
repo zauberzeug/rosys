@@ -33,7 +33,7 @@ class BatteryControlHardware(ModuleHardware):
                 f'let {name}_release do {name}_release_t = core.millis; {name}_reset.on(); '
                 f'await core.millis > {name}_release_t + {pulse_ms}; {name}_reset.off(); end',
             ]), [(f'{name}_status.level', 'int')])
-            core_message_fields = [f'{self.expander_bus.name}.{name}_status.level']
+            core_message_fields = [self.expander_bus.mirror(f'{name}_status.level')]
         else:
             lizard_code = remove_indentation(f'''
                 {self.name}_reset = {expander.name + "." if expander else ""}Output({reset_pin})

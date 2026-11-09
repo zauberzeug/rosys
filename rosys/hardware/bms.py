@@ -138,7 +138,7 @@ class BmsHardware(Bms, ModuleHardware):
                 {name} = JbdBms({name}_serial)
             '''), fields, interval=1.0)
             # NOTE: a routine is parsed once at startup; parsing the print line with every reading stalls the core
-            mirrors = ', '.join(f'{self.expander_bus.name}.{field}' for field, _ in fields)
+            mirrors = ', '.join(self.expander_bus.mirror(field) for field, _ in fields)
             lizard_code = f'{declarations}\nlet {name}_read do core.print("{name}", {mirrors}); end'
         else:
             lizard_code = remove_indentation(f'''

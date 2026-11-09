@@ -19,7 +19,8 @@ from rosys.hardware.communication import Communication
 from rosys.hardware.robot_brain import augment
 from rosys.testing import forward
 
-FLASHED = 'expander bus p0 flashed its expander, which restarts now'
+FLASHED = 'serial bus p0 flashed peer 2, which restarts now'
+FLASH = 'p0.flash_peer(2, 25, 14)'
 BOOTSTRAP = ['serial = Serial(3, 1, 460800, 0)', 'bus = SerialBus(serial, 2)']
 EXPANDER_STARTUP = '''rdyp = Output(15)
 en3 = Output(12)
@@ -70,23 +71,20 @@ class CoreSimulation(Communication):
 
     @property
     def p0_commands(self) -> list[str]:
-        return [match.group(1) for line in self.sent if (match := re.fullmatch(r'p0\.send\("(.*)"\)', line))]
+        return [match.group(1) for line in self.sent if (match := re.fullmatch(r'p0\.send\(2, "(.*)"\)', line))]
 
     async def send(self, msg: str) -> None:
         line = msg.rsplit('@', 1)[0]
         self.sent.append(line)
         if line == 'core.startup_checksum()':
             self.incoming.append(f'checksum: {self.core_checksum}')
-        elif line == 'p0.flash()':
+        elif line == FLASH:
             self.incoming.append(self.flash_answer)
             if self.flash_answer == FLASHED:
                 self.p0_edit = list(BOOTSTRAP)
                 self.p0_saved = list(BOOTSTRAP)
-                self.incoming.append('p0: Ready.')
-        elif line == 'p0.restart()':
-            self.p0_edit = list(self.p0_saved)
-            self.incoming.append('p0: Ready.')
-        elif match := re.fullmatch(r'p0\.send\("(.*)"\)', line):
+                self.incoming.append('p0[2]: Ready.')
+        elif match := re.fullmatch(r'p0\.send\(2, "(.*)"\)', line):
             self._run_on_p0(match.group(1).replace('\\"', '"').replace('%%', '%'))
         elif match := re.fullmatch(r'(\w+)\(\)', line):
             text, names = self.routines[match.group(1)]
@@ -96,7 +94,7 @@ class CoreSimulation(Communication):
 
     def _run_on_p0(self, command: str) -> None:
         self.incoming.extend(self.peer_2_lines)
-        self.incoming.extend(f'p0: {noise}' for noise in self.p0_noise)
+        self.incoming.extend(f'p0[2]: {noise}' for noise in self.p0_noise)
         if command == '!-':
             self.p0_edit = []
         elif command.startswith('!+'):
@@ -104,17 +102,20 @@ class CoreSimulation(Communication):
                 self.p0_edit.append(command[2:])
         elif command == '!.':
             self.p0_saved = list(self.p0_edit)
+        elif command == 'core.restart()':
+            self.p0_edit = list(self.p0_saved)
+            self.incoming.append('p0[2]: Ready.')
         elif command == 'core.startup_checksum()':
-            self.incoming.append(f'p0: checksum: {checksum(self.p0_edit)}')
+            self.incoming.append(f'p0[2]: checksum: {checksum(self.p0_edit)}')
         elif command == 'core.version()':
-            self.incoming.append('p0: version: lizard v0.16.0-12-gabcdef0')
+            self.incoming.append('p0[2]: version: lizard v0.16.0-12-gabcdef0')
         elif match := re.fullmatch(r'core\.get_pin_status\((\d+)\)', command):
-            self.incoming.append(f'p0: GPIO_Status[{match.group(1)}]| Level: 1| InputEn: 1| OutputEn: 0| '
+            self.incoming.append(f'p0[2]: GPIO_Status[{match.group(1)}]| Level: 1| InputEn: 1| OutputEn: 0| '
                                  'OpenDrain: 0| Pullup: 1| Pulldown: 0| DriveStrength: 2| SleepSel: 0')
         elif command == 'bms.cell_voltages()':
-            self.incoming.append('p0: bms cell voltages: 3.650 3.657')
+            self.incoming.append('p0[2]: bms cell voltages: 3.650 3.657')
         elif command == 'bms.hardware_version()':
-            self.incoming.append('p0: bms hardware version: OH17SA01-L17S-100A')
+            self.incoming.append('p0[2]: bms hardware version: OH17SA01-L17S-100A')
 
     async def read(self) -> str | None:
         return augment(self.incoming.popleft()) if self.incoming else None
@@ -186,18 +187,20 @@ async def test_the_core_mirrors_the_values_of_the_expander(robot: Robot) -> None
         'rdyp = Output(15)',
         'en3 = Output(12)',
         'serial = Serial(26, 27, 460800, 1)',
-        'p0 = ExpanderBus(serial, 25, 14)',
-        'float p0.bms.voltage = 0',
-        'float p0.bms.current = 0',
-        'int p0.bms.percentage = 0',
-        'float p0.bms.temperature = 0',
-        'int p0.bms.protections = 0',
-        'int p0.bms.last_message_age = 0',
-        'int p0.core.millis = 0',
-        'let bms_read do core.print("bms", p0.bms.voltage, p0.bms.current, p0.bms.percentage, p0.bms.temperature, '
-        'p0.bms.protections, p0.bms.last_message_age, p0.core.millis); end',
-        'int p0.battery_control_status.level = 0',
-        'core.output("core.millis p0.battery_control_status.level")',
+        'p0 = SerialBus(serial, 1)',
+        'p0.make_coordinator(2)',
+        'p0_values = BusTelemetry(p0, 2)',
+        'float p0_values.bms.voltage = 0',
+        'float p0_values.bms.current = 0',
+        'int p0_values.bms.percentage = 0',
+        'float p0_values.bms.temperature = 0',
+        'int p0_values.bms.protections = 0',
+        'int p0_values.bms.last_message_age = 0',
+        'int p0_values.core.millis = 0',
+        'let bms_read do core.print("bms", p0_values.bms.voltage, p0_values.bms.current, p0_values.bms.percentage, '
+        'p0_values.bms.temperature, p0_values.bms.protections, p0_values.bms.last_message_age, p0_values.core.millis); end',
+        'int p0_values.battery_control_status.level = 0',
+        'core.output("core.millis p0_values.battery_control_status.level")',
         'rdyp.on()',
         'en3.on()',
     ]
@@ -225,9 +228,9 @@ async def test_the_expander_runs_the_modules_and_sends_their_values(robot: Robot
 
 async def test_the_bms_reads_the_mirrors_of_new_answers(robot: Robot) -> None:
     def mirror(voltage: float, age: int, millis: int) -> None:
-        robot.core.mirrors = {'p0.bms.voltage': voltage, 'p0.bms.current': -1.5, 'p0.bms.percentage': 57,
-                              'p0.bms.temperature': 24.85, 'p0.bms.protections': 0,
-                              'p0.bms.last_message_age': age, 'p0.core.millis': millis}
+        robot.core.mirrors = {'p0_values.bms.voltage': voltage, 'p0_values.bms.current': -1.5, 'p0_values.bms.percentage': 57,
+                              'p0_values.bms.temperature': 24.85, 'p0_values.bms.protections': 0,
+                              'p0_values.bms.last_message_age': age, 'p0_values.core.millis': millis}
     states: list[float] = []
     robot.bms.STATE_UPDATED.subscribe(lambda state: states.append(state.voltage))
 
@@ -279,9 +282,9 @@ async def test_the_bms_asks_the_expander_for_cell_voltages_and_its_version(robot
     assert robot.core.p0_commands == ['bms.cell_voltages()', 'bms.hardware_version()']
     assert robot.bms.raw_data == {'voltages': [3.65, 3.657], 'hardware version': 'OH17SA01-L17S-100A'}
 
-    robot.core.mirrors = {'p0.bms.voltage': 26.5, 'p0.bms.current': 0.0, 'p0.bms.percentage': 57,
-                          'p0.bms.temperature': 24.85, 'p0.bms.protections': 0, 'p0.bms.last_message_age': 300,
-                          'p0.core.millis': 5000}
+    robot.core.mirrors = {'p0_values.bms.voltage': 26.5, 'p0_values.bms.current': 0.0, 'p0_values.bms.percentage': 57,
+                          'p0_values.bms.temperature': 24.85, 'p0_values.bms.protections': 0, 'p0_values.bms.last_message_age': 300,
+                          'p0_values.core.millis': 5000}
     robot.bms.state.last_update = -10
     await forward(seconds=1.5)
     assert robot.bms.raw_data['voltages'] == [3.65, 3.657], 'a reading keeps the cell voltages'
@@ -300,7 +303,7 @@ async def test_the_expander_times_the_relay_pulse(robot: Robot) -> None:
 
 async def test_commands_wait_for_the_startup_of_the_expander(robot: Robot) -> None:
     robot.core.p0_edit = robot.core.p0_saved = list(BOOTSTRAP)  # NOTE: e.g. right after flashing
-    robot.core.incoming.append('p0: Ready.')
+    robot.core.incoming.append('p0[2]: Ready.')
     await forward(seconds=0.1)
     assert not robot.p0.runs_startup
     await run(robot.battery.release_battery_relay())
@@ -314,11 +317,11 @@ async def test_commands_wait_for_the_startup_of_the_expander(robot: Robot) -> No
 
 async def test_a_restarted_expander_is_checked(robot: Robot) -> None:
     robot.core.p0_edit = robot.core.p0_saved = ['old = Output(2)']
-    robot.core.incoming.append('p0: Ready.')
+    robot.core.incoming.append('p0[2]: Ready.')
     await forward(seconds=3.0)
     assert any('please configure p0' in message for message in robot.notifications)
 
-    robot.core.incoming.append('p0: error: startup skipped after 2 failed boots (panic)')
+    robot.core.incoming.append('p0[2]: error: startup skipped after 2 failed boots (panic)')
     await forward(seconds=0.1)
     assert robot.notifications[-1] == 'p0: error: startup skipped after 2 failed boots (panic)'
 
@@ -329,8 +332,7 @@ async def test_configure_verifies_before_saving_and_after_restarting(robot: Robo
     lines = robot.p0.startup.splitlines()
     assert robot.core.p0_saved == lines
     assert robot.core.p0_commands == ['!-', *(f'!+{line}' for line in lines), 'core.startup_checksum()', '!.',
-                                      'core.startup_checksum()', 'core.startup_checksum()']
-    assert robot.core.sent.index('p0.restart()') > robot.core.sent.index('p0.send("!.")')
+                                      'core.startup_checksum()', 'core.restart()', 'core.startup_checksum()']
     assert robot.p0.runs_startup
 
 
@@ -340,7 +342,7 @@ async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
     assert not await run(robot.p0.configure())
     assert robot.core.p0_saved == ['old = Output(2)']
     assert '!.' not in robot.core.p0_commands
-    assert 'p0.restart()' in robot.core.sent, 'a restart leaves the edited script for the saved one'
+    assert 'core.restart()' in robot.core.p0_commands, 'a restart leaves the edited script for the saved one'
     assert robot.core.p0_edit == ['old = Output(2)']
 
 
@@ -355,8 +357,8 @@ async def test_configure_and_flash_refuse_to_run_twice(robot: Robot) -> None:
 
 
 async def test_a_skipped_startup_is_no_running_startup(robot: Robot) -> None:
-    robot.core.incoming.append('p0: Ready.')
-    robot.core.incoming.append('p0: error: startup skipped after 2 failed boots (panic)')
+    robot.core.incoming.append('p0[2]: Ready.')
+    robot.core.incoming.append('p0[2]: error: startup skipped after 2 failed boots (panic)')
     await forward(seconds=3.0)  # NOTE: the check after the restart finds the saved script, which did not run
     assert not robot.p0.runs_startup
     await run(robot.battery.release_battery_relay())
@@ -375,7 +377,7 @@ async def test_a_peer_2_of_another_serial_bus_is_not_the_expander(robot: Robot) 
 async def test_a_failed_request_leaves_no_reply_behind(robot: Robot) -> None:
     with pytest.raises(ValueError):
         await robot.p0.request('x' * 300, 'checksum:')
-    robot.core.incoming.append('p0: checksum: abcd')
+    robot.core.incoming.append('p0[2]: checksum: abcd')
     await forward(seconds=0.1)
     assert await run(robot.p0.read_checksum()) == robot.p0.local_checksum
 
@@ -383,7 +385,7 @@ async def test_a_failed_request_leaves_no_reply_behind(robot: Robot) -> None:
 async def test_flash_copies_the_firmware_and_configures_the_expander(robot: Robot) -> None:
     await run(robot.brain.lizard_firmware.flash_p0())
     sent = robot.core.sent
-    assert sent.index('p0.flash()') < sent.index('p0.send("!-")')
+    assert sent.index(FLASH) < sent.index('p0.send(2, "!-")')
     assert robot.core.p0_saved == robot.p0.startup.splitlines()
     assert 'core.restart()' not in sent  # NOTE: the core keeps running, unlike after an expander's flash
     assert robot.brain.lizard_firmware.p0_version == '0.16.0'
@@ -393,14 +395,30 @@ async def test_flash_copies_the_firmware_and_configures_the_expander(robot: Robo
 async def test_flash_needs_the_core_startup_with_the_expander_bus(robot: Robot) -> None:
     robot.core.core_checksum = 'beef'  # NOTE: e.g. the core still runs an expander
     await run(robot.brain.lizard_firmware.flash_p0())
-    assert 'p0.flash()' not in robot.core.sent
+    assert FLASH not in robot.core.sent
+
+
+async def test_mirror_warnings_notify_only_outside_flash_and_configure(robot: Robot) -> None:
+    robot.core.incoming.append('warning: p0_values: no frame of peer 2 within 5 s')
+    await forward(seconds=0.1)
+    assert robot.notifications[-1] == 'warning: p0_values: no frame of peer 2 within 5 s'
+
+    robot.notifications.clear()
+    robot.p0.busy = True  # NOTE: e.g. right after flashing, before the expander's startup sends frames
+    robot.core.incoming.append('warning: p0_values: no frame of peer 2 within 5 s')
+    await forward(seconds=0.1)
+    assert not robot.notifications
 
 
 async def test_a_failed_flash_writes_no_startup(robot: Robot) -> None:
-    robot.core.flash_answer = 'error processing uart0: could not flash the expander of expander bus "p0"'
+    robot.core.flash_answer = 'error processing uart0: serial bus "p0" could not flash peer 2'
     assert not await run(robot.p0.flash(timeout=5))
     assert robot.core.p0_commands == []
-    assert robot.notifications[-1] == 'Flashing p0 failed: could not flash the expander of expander bus "p0"'
+    assert robot.notifications[-1] == 'Flashing p0 failed: serial bus "p0" could not flash peer 2'
+
+    robot.core.flash_answer = 'error processing uart0: pin 14 is already used by module "en"'
+    assert not await run(robot.p0.flash(timeout=5))
+    assert robot.notifications[-1] == 'Flashing p0 failed: pin 14 is already used by module "en"'
 
 
 async def test_the_version_and_pins_of_the_expander_come_over_the_bus(robot: Robot) -> None:
@@ -416,7 +434,7 @@ async def test_the_version_and_pins_of_the_expander_come_over_the_bus(robot: Rob
 async def test_the_expander_refuses_what_its_startup_or_frames_cannot_carry(rosys_integration: None) -> None:
     brain = RobotBrain(CoreSimulation(), enable_esp_on_startup=False)
     p0 = ExpanderBusHardware(brain, serial=SerialHardware(brain))
-    assert p0.add_lizard_code('a = Input(4)', [('a.level', 'int')]) == 'int p0.a.level = 0'
+    assert p0.add_lizard_code('a = Input(4)', [('a.level', 'int')]) == 'int p0_values.a.level = 0'
     with pytest.raises(ValueError, match='mirrored already'):
         p0.add_lizard_code('', [('a.level', 'int')], interval=1.0)
     with pytest.raises(ValueError, match='exceeds a bus message'):

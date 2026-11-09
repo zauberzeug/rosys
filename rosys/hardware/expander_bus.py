@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
@@ -13,8 +14,10 @@ from .serial import SerialHardware
 
 FieldType = Literal['bool', 'int', 'float']
 
+CORE_ID = 1
+"""The core's node on the bus."""
 PEER_ID = 2
-"""The expander's node on the bus; the core is node 1."""
+"""The expander's node on the bus."""
 CONSOLE_RX_PIN = 3
 CONSOLE_TX_PIN = 1
 """The console pins of the expander (an ESP32), which its bus link takes over."""
@@ -31,20 +34,22 @@ READY_TIMEOUT = 10.0
 STARTUP_TIMEOUT = 10.0
 """Seconds a command waits for the expander to run its startup script."""
 LINE_INTERVAL = 0.05
-"""Seconds between the startup lines that ``configure()`` writes, since the bus queues only 8 messages to the expander."""
+"""Seconds between the startup lines that ``configure()`` writes, so that they do not fill the bus's queue to the expander."""
 
 
 class ExpanderBusHardware(ModuleHardware):
-    """A port expander as the only peer of a serial bus with the core, Lizard's ``ExpanderBus``.
+    """A port expander as the only peer of a Lizard ``SerialBus`` with the core, on the expander's console pins.
 
     It replaces ``ExpanderHardware`` for an expander that is wired the same way.
     The expander runs a startup script of its own, which modules extend with ``add_lizard_code``,
-    and sends their values in telemetry frames, which the core mirrors as properties of the bus, e.g. ``p0.button.level``.
-    Lines of the expander arrive as ``p0: ...``, with the name of the bus like those of an expander;
+    and sends their values in telemetry frames, which a ``BusTelemetry`` module of the core mirrors as its properties,
+    e.g. ``p0_values.button.level``.
+    Lines of the expander arrive as ``p0[2]: ...``, with the name of the bus and the expander's node;
     commands go to the expander with ``send``.
 
     ``configure()`` writes the expander's startup script over the bus;
-    ``flash()`` copies the core's firmware onto the expander and configures it afterwards, since flashing erases it.
+    ``flash()`` copies the core's firmware onto the expander through its boot and enable pins with ``flash_peer``
+    and configures it afterwards, since flashing erases it.
     """
 
     def __init__(self, robot_brain: RobotBrain, *,
@@ -53,14 +58,20 @@ class ExpanderBusHardware(ModuleHardware):
                  boot: int = 25,
                  enable: int = 14) -> None:
         """
-        :param name: name of the core's ``ExpanderBus``
+        :param name: name of the core's ``SerialBus`` to the expander
         :param serial: the core's serial to the expander's console
-        :param boot: the core's GPIO wired to the expander's GPIO0
-        :param enable: the core's GPIO wired to the expander's EN
+        :param boot: the core's GPIO wired to the expander's GPIO0, used only for flashing
+        :param enable: the core's GPIO wired to the expander's EN, used only for flashing
         """
         self.name = name
         self.serial = serial
-        lizard_code = f'{name} = ExpanderBus({serial.name}, {boot}, {enable})'
+        self.boot = boot
+        self.enable = enable
+        lizard_code = '\n'.join([
+            f'{name} = SerialBus({serial.name}, {CORE_ID})',
+            f'{name}.make_coordinator({PEER_ID})',
+            f'{self.mirror_name} = BusTelemetry({name}, {PEER_ID})',
+        ])
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         self.log = logging.getLogger('rosys.expander_bus')
         self.busy = False
@@ -82,8 +93,17 @@ class ExpanderBusHardware(ModuleHardware):
 
     @property
     def line_prefix(self) -> str:
-        """The core prints the expander's lines as ``p0: <line>``, unlike ``bus[2]:`` of a serial bus peer 2."""
-        return f'{self.name}:'
+        """The core prints the expander's lines as ``p0[2]: <line>``, unlike ``bus[2]:`` of a peer 2 of another bus."""
+        return f'{self.name}[{PEER_ID}]:'
+
+    @property
+    def mirror_name(self) -> str:
+        """Name of the core's ``BusTelemetry`` module that mirrors the expander's frames."""
+        return f'{self.name}_values'
+
+    def mirror(self, field: str) -> str:
+        """The core's property that mirrors ``field`` of the expander."""
+        return f'{self.mirror_name}.{field}'
 
     def add_lizard_code(self, code: str, fields: Sequence[tuple[str, FieldType]] = (), *,
                         interval: float = 0.1) -> str:
@@ -92,7 +112,7 @@ class ExpanderBusHardware(ModuleHardware):
         :param code: Lizard code for the expander, without the ``p0.`` of an expander's proxies
         :param fields: properties or variables of the expander with their Lizard types
         :param interval: seconds between the expander's frames with these fields
-        :return: the core's declarations of the mirrored fields, which the core reads as ``<name>.<field>``
+        :return: the core's declarations of the mirrored fields, which the core reads as ``mirror(field)``
         :raises ValueError: if a line exceeds a bus message, a field is mirrored already,
             or the fields exceed the expander's telemetry frames
         """
@@ -115,7 +135,7 @@ class ExpanderBusHardware(ModuleHardware):
                 raise ValueError(f'the telemetry line of {self.name} every {interval_ms} ms exceeds a bus message')
         self._code += lines
         self._frames = frames
-        return '\n'.join(f'{type_} {self.name}.{field} = {"false" if type_ == "bool" else "0"}'
+        return '\n'.join(f'{type_} {self.mirror(field)} = {"false" if type_ == "bool" else "0"}'
                          for field, type_ in fields)
 
     @property
@@ -138,7 +158,7 @@ class ExpanderBusHardware(ModuleHardware):
         return f'{sum(self.startup.encode()) % 0x10000:04x}'
 
     async def send(self, command: str, *, force: bool = False) -> None:
-        """Run ``command`` on the expander, with ``<name>.send("<command>")`` on the core.
+        """Run ``command`` on the expander, with ``<name>.send(2, "<command>")`` on the core.
 
         :raises ValueError: if the command exceeds a bus message
         :raises EspNotReadyException: if the core is not ready and ``force`` is ``False``
@@ -146,7 +166,7 @@ class ExpanderBusHardware(ModuleHardware):
         if len(command.encode()) > PAYLOAD_LIMIT:
             raise ValueError(f'a command for {self.name} exceeds a bus message: {command[:60]}...')
         escaped = command.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')  # a printf format in a string
-        await self.robot_brain.send(f'{self.name}.send("{escaped}")', force=force)
+        await self.robot_brain.send(f'{self.name}.send({PEER_ID}, "{escaped}")', force=force)
 
     async def send_after_startup(self, command: str, *, timeout: float = STARTUP_TIMEOUT) -> bool:
         """Run ``command`` on the expander once it runs its startup script, which creates what the command uses.
@@ -171,7 +191,7 @@ class ExpanderBusHardware(ModuleHardware):
 
         Requests with the same ``reply`` are serialized, since replies carry no request ID.
 
-        :return: the expander's line without ``p0:``, or ``None`` after the timeout
+        :return: the expander's line without ``p0[2]:``, or ``None`` after the timeout
         """
         async with self._reply_locks[reply]:
             self._replies[reply] = None
@@ -257,7 +277,7 @@ class ExpanderBusHardware(ModuleHardware):
         return None
 
     async def flash(self, *, timeout: float = FLASH_TIMEOUT) -> bool:
-        """Copy the core's firmware onto the expander with ``<name>.flash()``, then write the expander's startup script.
+        """Copy the core's firmware onto the expander with ``flash_peer``, then write the expander's startup script.
 
         The core's main loop stalls for the whole transfer (about 50 s), so the robot must be at rest.
 
@@ -280,7 +300,7 @@ class ExpanderBusHardware(ModuleHardware):
             self._flash_result = None
             self._flashing = True
             try:
-                await self.robot_brain.send(f'{self.name}.flash()')
+                await self.robot_brain.send(f'{self.name}.flash_peer({PEER_ID}, {self.boot}, {self.enable})')
                 deadline = rosys.time() + timeout
                 while self._flash_result is None and rosys.time() < deadline:
                     await rosys.sleep(0.1)
@@ -300,7 +320,7 @@ class ExpanderBusHardware(ModuleHardware):
 
     async def _restart(self) -> bool:
         ready_count = self._ready_count
-        await self.robot_brain.send(f'{self.name}.restart()')
+        await self.send('core.restart()')  # NOTE: the boot and enable pins serve only for flashing
         return await self._wait_for_ready(ready_count)
 
     async def _wait_for_ready(self, ready_count: int) -> bool:
@@ -312,8 +332,15 @@ class ExpanderBusHardware(ModuleHardware):
     def _handle_line(self, line: str) -> None:
         if self._flashing:
             self._handle_flash_line(line)
-        if line.startswith(f'warning: {self.name}:'):  # e.g. a mirrored field that no frame of the expander carries
-            rosys.notify(line, 'warning', log_level=logging.WARNING)
+        # e.g. a mirrored field that no frame of the expander carries
+        if line.startswith(f'warning: {self.mirror_name}:'):
+            if self.busy:
+                self.log.warning(line)  # NOTE: a freshly flashed expander sends no frames until it is configured
+            else:
+                rosys.notify(line, 'warning', log_level=logging.WARNING)
+            return
+        if line.startswith((f'warning: serial bus {self.name} ', f'serial bus {self.name}:')):
+            self.log.warning(line)  # NOTE: e.g. a poll timeout and the answer after it whenever the expander restarts
             return
         if not line.startswith(self.line_prefix):
             return
@@ -338,10 +365,11 @@ class ExpanderBusHardware(ModuleHardware):
             self.log.warning('%s: %s', self.name, payload)
 
     def _handle_flash_line(self, line: str) -> None:
-        if line == f'expander bus {self.name} flashed its expander, which restarts now':
+        if line == f'serial bus {self.name} flashed peer {PEER_ID}, which restarts now':
             self._flash_result = 'flashed'
         elif line.startswith('error processing uart0:') and \
-                (f'"{self.name}"' in line or f'"{self.serial.name}"' in line):
+                (f'"{self.name}"' in line or f'"{self.serial.name}"' in line or
+                 re.search(rf'\bpin ({self.boot}|{self.enable})\b', line)):
             self._flash_result = line.removeprefix('error processing uart0:').strip()
 
     async def _check_after_restart(self) -> None:
