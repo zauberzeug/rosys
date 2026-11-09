@@ -20,6 +20,7 @@ from .detections import (
 )
 from .detector import (
     Autoupload,
+    BatchImageMetadata,
     Detector,
     DetectorException,
     DetectorInfo,
@@ -225,7 +226,10 @@ class DetectorHardware(Detector):
                            autoupload: Autoupload = Autoupload.FILTERED,
                            tags: list[str] | None = None,
                            source: str | None = None,
-                           creation_date: datetime | str | None = None) -> list[Detections] | None:
+                           creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None) -> list[Detections] | None:
+        if image_metadata is not None and len(image_metadata) != len(images):
+            raise ValueError(f'got {len(image_metadata)} image metadata for {len(images)} images')
 
         if not self.is_connected:
             self.log.error('Detection failed: detector is not connected')
@@ -237,7 +241,7 @@ class DetectorHardware(Detector):
             raise DetectorException('total image size too large')
 
         try:
-            detect_call = self._batch_detect(images, autoupload, tags or [], source, creation_date)
+            detect_call = self._batch_detect(images, autoupload, tags or [], source, creation_date, image_metadata)
             if lazy:
                 batch_detections = await self.lazy_worker.run(detect_call)
             else:
@@ -260,17 +264,23 @@ class DetectorHardware(Detector):
                             autoupload: Autoupload,
                             tags: list[str],
                             source: str | None = None,
-                            creation_date: datetime | str | None = None) -> list[Detections]:
+                            creation_date: datetime | str | None = None,
+                            image_metadata: list[BatchImageMetadata] | None = None) -> list[Detections]:
 
         if len(images) == 0:
             return []
+        if image_metadata is None:
+            image_metadata = [BatchImageMetadata()] * len(images)
 
         try:
-            # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
-            images_dict = list(await asyncio.gather(*(self._prepare_image(image) for image in images)))
+            prepared = await asyncio.gather(*(self._prepare_image(image) for image in images))
             response = await self.sio.call('batch_detect', {
-                'images': images_dict,
-                'camera_id': images[0].camera_id if images else None,
+                'images': [{**image_dict,
+                            'camera_id': image.camera_id,
+                            'tags': metadata.tags,
+                            'source': metadata.source,
+                            'creation_date': _creation_date_to_isoformat(metadata.creation_date)}
+                           for image, image_dict, metadata in zip(images, prepared, image_metadata, strict=True)],
                 'tags': tags,
                 'source': source,
                 'autoupload': autoupload.value,

@@ -74,4 +74,6 @@ class KeyboardControl:
         except TimeoutError:
             self.log.warning('lost connection to browser')
             self.CONNECTION_INTERRUPTED.emit()
+            self.direction.y = 0
+            self.direction.x = 0
             self.steerer.stop()
