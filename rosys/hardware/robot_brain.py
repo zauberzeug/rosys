@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import defaultdict, deque
+from collections.abc import Mapping
 from itertools import pairwise
 
 from nicegui import Event, ui
@@ -39,7 +40,7 @@ class RobotBrain:
                  enable_esp_on_startup: bool = True,
                  use_espresso: bool = False,
                  heartbeat_interval: float | None = None,
-                 supported_lizard_versions: str | None = None) -> None:
+                 supported_lizard_versions: Mapping[str, str] | None = None) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -47,9 +48,10 @@ class RobotBrain:
         :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
         :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
         :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
-        :param supported_lizard_versions: PEP 440 version specifier restricting which Lizard versions can be
-            downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
-        :raises InvalidSpecifier: When ``supported_lizard_versions`` is not a valid version specifier
+        :param supported_lizard_versions: PEP 440 version specifier per firmware project restricting what can be
+            downloaded and flashed, e.g. ``{'lizard': '<0.14.0'}``; a project not listed is refused
+            (default: ``None``, every project and version is supported)
+        :raises InvalidSpecifier: When a specifier is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""

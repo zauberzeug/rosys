@@ -42,7 +42,7 @@ def lizard_firmware(rosys_integration: None) -> Generator[LizardFirmware, None, 
     """A firmware restricted to Lizard versions below 0.14.0."""
     robot_brain = RobotBrain(VersionCommunicationSimulation(),
                              enable_esp_on_startup=False,
-                             supported_lizard_versions='<0.14.0')
+                             supported_lizard_versions={'lizard': '<0.14.0'})
     _robot = RobotHardware([], robot_brain)  # NOTE: keep alive so its weak update repeater keeps running
     yield robot_brain.lizard_firmware
 
@@ -55,28 +55,42 @@ def notifications(rosys_integration: None) -> list[str]:
     return messages
 
 
-@pytest.mark.parametrize('specifier, version, expected', [
-    (None, '0.12.0', True),
-    (None, '0.14.0', True),
-    (None, '99.0.0', True),
-    ('<0.14.0', '0.13.0', True),
-    ('<0.14.0', '0.14.0', False),
-    ('>0.12.0,<0.14.0', '0.12.0', False),
-    ('>0.12.0,<0.14.0', '0.13.9', True),
-    ('<0.14.0', '', False),
-    ('<0.14.0', 'not-a-version', False),
+@pytest.mark.parametrize('specifier, project, version, expected', [
+    (None, 'lizard', '0.12.0', True),
+    (None, 'lizard-zz', '99.0.0', True),
+    ('<0.14.0', 'lizard', '0.13.0', True),
+    ('<0.14.0', 'lizard', '0.14.0', False),
+    ('>0.12.0,<0.14.0', 'lizard', '0.12.0', False),
+    ('>0.12.0,<0.14.0', 'lizard', '0.13.9', True),
+    ('<0.14.0', 'lizard', '', False),
+    ('<0.14.0', 'lizard', 'not-a-version', False),
+    ('<0.14.0', 'lizard-zz', '0.2.0', False),
 ])
 def test_is_version_supported(lizard_firmware: LizardFirmware,
-                              specifier: str | None, version: str, expected: bool) -> None:
-    """Without a specifier all versions are supported; with one, violating and unparsable versions are not."""
-    lizard_firmware.supported_versions = SpecifierSet(specifier) if specifier else None
-    assert lizard_firmware.is_version_supported(version) == expected
+                              specifier: str | None, project: str, version: str, expected: bool) -> None:
+    """Without specifiers every firmware is supported; with them, other projects, violating and unparsable versions are not."""
+    lizard_firmware.supported_versions = {'lizard': SpecifierSet(specifier)} if specifier else None
+    assert lizard_firmware.is_version_supported(project, version) == expected
+
+
+async def test_other_project_refused(lizard_firmware: LizardFirmware, notifications: list[str]) -> None:
+    """A Core running a firmware project the Robot Brain does not list is reported as unsupported."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    communication.core_version = 'lizard-zz v0.2.0'
+    await connect(communication)
+    task = background_tasks.create(lizard_firmware.read_core_version(), name='read core version')
+    await forward(seconds=3.0)
+    assert task.done()
+    assert any('lizard-zz 0.2.0 is not supported' in message and 'requires lizard <0.14.0' in message
+               for message in notifications)
 
 
 async def test_invalid_specifier(rosys_integration: None) -> None:
     """An invalid specifier fails fast when constructing the robot brain."""
     with pytest.raises(InvalidSpecifier):
-        RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False, supported_lizard_versions='latest')
+        RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False,
+                   supported_lizard_versions={'lizard': 'latest'})
 
 
 async def test_online_versions(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -117,6 +131,7 @@ async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     if version is not None:
         setattr(lizard_firmware, attr, version)
+        setattr(lizard_firmware, attr.replace('_version', '_project'), 'lizard')
     await getattr(lizard_firmware, f'flash_{target}')()
     assert any(expected_message in message for message in notifications)
 
