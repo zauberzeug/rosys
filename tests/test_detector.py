@@ -10,13 +10,16 @@ from rosys import run
 from rosys.geometry import Point, Point3d, Polygon
 from rosys.testing import forward
 from rosys.vision import (
+    BatchImageMetadata,
     CalibratableCamera,
+    Detector,
     DetectorHardware,
     DetectorSimulation,
     Image,
     ImageMasks,
     ImageState,
     ImageTransmissionFormat,
+    SimulatedCameraProvider,
     SimulatedObject,
 )
 from rosys.vision.detector import DetectorException
@@ -51,8 +54,8 @@ def detector(make_detector: Callable[..., DetectorHardware]) -> DetectorHardware
     return make_detector()
 
 
-def _image() -> Image:
-    return Image.from_array(np.zeros((2, 2, 3), dtype=np.uint8))
+def _image(camera_id: str = 'cam') -> Image:
+    return Image.from_array(np.zeros((2, 2, 3), dtype=np.uint8), camera_id=camera_id)
 
 
 LEFT_HALF = Polygon(outline=[Point(x=0, y=0), Point(x=0.5, y=0), Point(x=0.5, y=1), Point(x=0, y=1)])
@@ -97,7 +100,9 @@ async def test_images_are_sent_as_raw_pixel_arrays_by_default(detector: Detector
     await detector.batch_detect([image])
     await detector.upload(image)
     expected = {'bytes': image.array.tobytes(), 'dtype': 'uint8', 'shape': (2, 2, 3)}
-    assert payloads['detect']['image'] == payloads['batch_detect']['images'][0] == payloads['upload']['image'] == expected
+    assert payloads['detect']['image'] == payloads['upload']['image'] == expected
+    assert payloads['batch_detect']['images'][0] == \
+        {**expected, 'camera_id': 'cam', 'tags': [], 'source': None, 'creation_date': None}
 
 
 async def test_jpeg_transmission_encodes_the_images_before_sending(make_detector: Callable[..., DetectorHardware],
@@ -107,12 +112,40 @@ async def test_jpeg_transmission_encodes_the_images_before_sending(make_detector
     await detector.detect(image, lazy=False)
     await detector.batch_detect([image])
     await detector.upload(image)
-    for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
-        assert sent.keys() == {'format', 'bytes'}
+    batch_image = payloads['batch_detect']['images'][0]
+    assert payloads['detect']['image'].keys() == payloads['upload']['image'].keys() == {'format', 'bytes'}
+    assert batch_image.keys() == {'format', 'bytes', 'camera_id', 'tags', 'source', 'creation_date'}
+    for sent in (payloads['detect']['image'], batch_image, payloads['upload']['image']):
         assert sent['format'] == 'jpeg'
         decoded = decode_jpeg_image(sent['bytes'])
         assert decoded is not None
         assert decoded.shape == (2, 2, 3)
+
+
+async def test_batch_detect_sends_the_camera_of_each_image(detector: DetectorHardware, payloads: Payloads):
+    await detector.batch_detect([_image('front'), _image('back')])
+    assert [sent['camera_id'] for sent in payloads['batch_detect']['images']] == ['front', 'back']
+
+
+async def test_batch_detect_sends_the_metadata_of_each_image(detector: DetectorHardware, payloads: Payloads):
+    await detector.batch_detect([_image(), _image()], tags=['robot'], source='robot', image_metadata=[
+        BatchImageMetadata(tags=['front'], source='robot/front', creation_date=datetime(2020, 1, 1, 12, 0, 0)),
+        BatchImageMetadata(),
+    ])
+    first, second = payloads['batch_detect']['images']
+    assert (first['tags'], first['source'], first['creation_date']) == \
+        (['front'], 'robot/front', '2020-01-01T12:00:00')
+    assert (second['tags'], second['source'], second['creation_date']) == ([], None, None)
+    assert (payloads['batch_detect']['tags'], payloads['batch_detect']['source']) == (['robot'], 'robot')
+
+
+@pytest.mark.parametrize('kind', ['hardware', 'simulation'])
+async def test_batch_detect_rejects_image_metadata_that_does_not_match_the_images(
+        make_detector: Callable[..., DetectorHardware], kind: str):
+    detector: Detector = make_detector() if kind == 'hardware' else DetectorSimulation(SimulatedCameraProvider())
+    with pytest.raises(ValueError):
+        # without the check the simulation waits for a rosys time that nothing advances
+        await asyncio.wait_for(detector.batch_detect([_image(), _image()], image_metadata=[BatchImageMetadata()]), 1)
 
 
 def test_an_invalid_jpeg_quality_is_rejected_when_the_detector_is_created():
@@ -131,7 +164,9 @@ async def test_masked_cameras_send_the_masked_pixels_and_keep_the_image_untouche
     expected = detector.masks.apply(image)
     assert np.all(expected[:, :5] == ImageMasks.FILL_VALUE)
     for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
-        assert sent == {'bytes': expected.tobytes(), 'dtype': 'uint8', 'shape': (4, 8, 3)}
+        assert sent['bytes'] == expected.tobytes()
+        assert sent['dtype'] == 'uint8'
+        assert sent['shape'] == (4, 8, 3)
     assert np.array_equal(image.array, original)
 
 
@@ -144,7 +179,8 @@ async def test_masked_cameras_are_encoded_as_jpeg_after_masking(make_detector: C
     await detector.upload(image)
     expected = encode_image_as_jpeg(detector.masks.apply(image), detector.jpeg_quality)
     for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
-        assert sent == {'format': 'jpeg', 'bytes': expected}
+        assert sent['format'] == 'jpeg'
+        assert sent['bytes'] == expected
 
 
 async def test_cameras_without_masks_are_sent_unchanged(make_detector: Callable[..., DetectorHardware],

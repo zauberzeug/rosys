@@ -12,7 +12,7 @@ from .annotations import Annotations
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector, DetectorInfo, ImageState, ModelVersioningInfo
+from .detector import Autoupload, BatchImageMetadata, Detector, DetectorInfo, ImageState, ModelVersioningInfo
 from .image import Image
 
 
@@ -74,7 +74,10 @@ class DetectorSimulation(Detector):
                            tags: list[str] | None = None,
                            source: str | None = None,
                            creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None,
                            ) -> list[Detections] | None:
+        if image_metadata is not None and len(image_metadata) != len(images):
+            raise ValueError(f'got {len(image_metadata)} image metadata for {len(images)} images')
         blocked = [image.camera_id in self.blocked_cameras for image in images]
         await rosys.sleep(self.detection_delay)
         return [self._detect_single_image(image, is_blocked) for image, is_blocked in zip(images, blocked, strict=True)]
