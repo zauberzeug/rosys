@@ -138,6 +138,22 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, n
     assert 'does not answer' in str(task.exception())
 
 
+@pytest.mark.parametrize('script, expected_progress', [
+    ('echo one; echo two', 'two'),
+    ('echo one; echo two; exit 1', 'Flashing failed: two'),
+])
+async def test_stream_reports_progress_and_exit_code(lizard_firmware: LizardFirmware,
+                                                     script: str, expected_progress: str) -> None:
+    """The last output line becomes the progress; a non-zero exit raises with that line."""
+    stream = lizard_firmware._stream(['sh', '-c', script])  # pylint: disable=protected-access
+    if 'exit 1' in script:
+        with pytest.raises(FirmwareFlashError, match='two'):
+            await stream
+    else:
+        await stream
+    assert lizard_firmware.progress == expected_progress
+
+
 @pytest.mark.parametrize('target', ['core', 'p0'])
 @pytest.mark.parametrize('version, expect_warning', [('v0.13.0', False), ('v0.14.0', True)])
 async def test_version_warning(lizard_firmware: LizardFirmware, notifications: list[str],

@@ -16,6 +16,9 @@ from .communication import SerialCommunication
 if TYPE_CHECKING:
     from rosys.hardware.robot_brain import RobotBrain
 
+# NOTE: the flash scripts and esptool block-buffer their output when stdout is a pipe
+SUDO_UNBUFFERED = ['sudo', 'env', 'PYTHONUNBUFFERED=1']
+
 
 class LizardFirmware:
     GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases'
@@ -235,9 +238,9 @@ class LizardFirmware:
         await rosys.sleep(0.3)
         try:
             if self.robot_brain.use_espresso:
-                await self._stream(['sudo', './espresso.py', 'flash', *self.flash_params])
+                await self._stream([*SUDO_UNBUFFERED, './espresso.py', 'flash', *self.flash_params])
             else:
-                await self._stream(['sudo', './flash.py', *self.flash_params])
+                await self._stream([*SUDO_UNBUFFERED, './flash.py', *self.flash_params])
         finally:
             self.robot_brain.communication.connect()
         await self.read_core_version()
