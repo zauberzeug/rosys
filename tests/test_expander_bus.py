@@ -20,7 +20,7 @@ from rosys.hardware.robot_brain import augment
 from rosys.testing import forward
 
 FLASHED = 'serial bus p0 flashed peer 2, which restarts now'
-FLASH = 'p0.flash_peer(2, 25, 14)'
+FLASH = 'p0.flash_peer(2, p0_boot, p0_enable)'
 BOOTSTRAP = ['serial = Serial(3, 1, 460800, 0)', 'bus = SerialBus(serial, 2)']
 EXPANDER_STARTUP = '''rdyp = Output(15)
 en3 = Output(12)
@@ -187,6 +187,10 @@ async def test_the_core_mirrors_the_values_of_the_expander(robot: Robot) -> None
         'rdyp = Output(15)',
         'en3 = Output(12)',
         'serial = Serial(26, 27, 460800, 1)',
+        'p0_boot = Output(25)',
+        'p0_boot.on()',
+        'p0_enable = Output(14)',
+        'p0_enable.on()',
         'p0 = SerialBus(serial, 1)',
         'p0.make_coordinator(2)',
         'p0_values = BusTelemetry(p0, 2)',
@@ -416,9 +420,9 @@ async def test_a_failed_flash_writes_no_startup(robot: Robot) -> None:
     assert robot.core.p0_commands == []
     assert robot.notifications[-1] == 'Flashing p0 failed: serial bus "p0" could not flash peer 2'
 
-    robot.core.flash_answer = 'error processing uart0: pin 14 is already used by module "en"'
+    robot.core.flash_answer = 'error processing uart0: output "p0_enable" is no GPIO pin of this node'
     assert not await run(robot.p0.flash(timeout=5))
-    assert robot.notifications[-1] == 'Flashing p0 failed: pin 14 is already used by module "en"'
+    assert robot.notifications[-1] == 'Flashing p0 failed: output "p0_enable" is no GPIO pin of this node'
 
 
 async def test_the_version_and_pins_of_the_expander_come_over_the_bus(robot: Robot) -> None:

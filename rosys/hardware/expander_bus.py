@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
@@ -50,6 +49,7 @@ class ExpanderBusHardware(ModuleHardware):
     ``configure()`` writes the expander's startup script over the bus;
     ``flash()`` copies the core's firmware onto the expander through its boot and enable pins with ``flash_peer``
     and configures it afterwards, since flashing erases it.
+    The core keeps both pins high with two outputs, since the expander runs only while its EN is driven high.
     """
 
     def __init__(self, robot_brain: RobotBrain, *,
@@ -60,14 +60,18 @@ class ExpanderBusHardware(ModuleHardware):
         """
         :param name: name of the core's ``SerialBus`` to the expander
         :param serial: the core's serial to the expander's console
-        :param boot: the core's GPIO wired to the expander's GPIO0, used only for flashing
-        :param enable: the core's GPIO wired to the expander's EN, used only for flashing
+        :param boot: the core's GPIO wired to the expander's GPIO0, an output ``<name>_boot`` that stays on
+        :param enable: the core's GPIO wired to the expander's EN, an output ``<name>_enable`` that stays on
         """
         self.name = name
         self.serial = serial
         self.boot = boot
         self.enable = enable
         lizard_code = '\n'.join([
+            f'{self.boot_name} = Output({boot})',
+            f'{self.boot_name}.on()',  # NOTE: before EN, so that the expander starts its firmware, not its bootloader
+            f'{self.enable_name} = Output({enable})',
+            f'{self.enable_name}.on()',
             f'{name} = SerialBus({serial.name}, {CORE_ID})',
             f'{name}.make_coordinator({PEER_ID})',
             f'{self.mirror_name} = BusTelemetry({name}, {PEER_ID})',
@@ -95,6 +99,16 @@ class ExpanderBusHardware(ModuleHardware):
     def line_prefix(self) -> str:
         """The core prints the expander's lines as ``p0[2]: <line>``, unlike ``bus[2]:`` of a peer 2 of another bus."""
         return f'{self.name}[{PEER_ID}]:'
+
+    @property
+    def boot_name(self) -> str:
+        """Name of the core's output to the expander's GPIO0."""
+        return f'{self.name}_boot'
+
+    @property
+    def enable_name(self) -> str:
+        """Name of the core's output to the expander's EN."""
+        return f'{self.name}_enable'
 
     @property
     def mirror_name(self) -> str:
@@ -300,7 +314,7 @@ class ExpanderBusHardware(ModuleHardware):
             self._flash_result = None
             self._flashing = True
             try:
-                await self.robot_brain.send(f'{self.name}.flash_peer({PEER_ID}, {self.boot}, {self.enable})')
+                await self.robot_brain.send(f'{self.name}.flash_peer({PEER_ID}, {self.boot_name}, {self.enable_name})')
                 deadline = rosys.time() + timeout
                 while self._flash_result is None and rosys.time() < deadline:
                     await rosys.sleep(0.1)
@@ -320,7 +334,7 @@ class ExpanderBusHardware(ModuleHardware):
 
     async def _restart(self) -> bool:
         ready_count = self._ready_count
-        await self.send('core.restart()')  # NOTE: the boot and enable pins serve only for flashing
+        await self.send('core.restart()')
         return await self._wait_for_ready(ready_count)
 
     async def _wait_for_ready(self, ready_count: int) -> bool:
@@ -368,8 +382,7 @@ class ExpanderBusHardware(ModuleHardware):
         if line == f'serial bus {self.name} flashed peer {PEER_ID}, which restarts now':
             self._flash_result = 'flashed'
         elif line.startswith('error processing uart0:') and \
-                (f'"{self.name}"' in line or f'"{self.serial.name}"' in line or
-                 re.search(rf'\bpin ({self.boot}|{self.enable})\b', line)):
+                any(f'"{name}"' in line for name in (self.name, self.serial.name, self.boot_name, self.enable_name)):
             self._flash_result = line.removeprefix('error processing uart0:').strip()
 
     async def _check_after_restart(self) -> None:
