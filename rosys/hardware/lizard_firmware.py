@@ -217,7 +217,7 @@ class LizardFirmware:
     async def flash_core(self) -> None:
         """Flash the local firmware to the Core.
 
-        :raises FirmwareFlashError: when the Core cannot be flashed; it keeps its old firmware
+        :raises FirmwareFlashError: when a pre-check fails (the Core keeps its firmware) or the flash script fails
         """
         self.progress = ''
         if self.local_version is None:
@@ -250,7 +250,7 @@ class LizardFirmware:
     async def flash_p0(self, timeout: float = 120) -> None:
         """Let the Core replicate its firmware to the P0 and restart.
 
-        :raises FirmwareFlashError: when the P0 cannot be flashed; it keeps its old firmware
+        :raises FirmwareFlashError: when a pre-check fails or the Core reports no replica within ``timeout``
         """
         self.progress = ''
         if (reason := self._version_refusal(self.core_version, 'Flashing P0 failed')) is not None:
