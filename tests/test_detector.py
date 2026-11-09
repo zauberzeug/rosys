@@ -163,15 +163,15 @@ async def test_masks_can_be_set_after_creation(make_detector: Callable[..., Dete
     assert payloads['detect']['image']['bytes'] == detector.masks.apply(image).tobytes()
 
 
-async def test_interrupted_masking_cancels_the_call_instead_of_failing(make_detector: Callable[..., DetectorHardware],
-                                                                       monkeypatch: pytest.MonkeyPatch):
+async def test_masking_interrupted_by_shutdown_raises_detector_exception(make_detector: Callable[..., DetectorHardware],
+                                                                         monkeypatch: pytest.MonkeyPatch):
     async def interrupted(*_: Any, **__: Any) -> None:
         return None
     monkeypatch.setattr(run, 'io_bound', interrupted)
     detector = make_detector(masks={'cam': [LEFT_HALF]})
-    with pytest.raises(asyncio.CancelledError):
+    with pytest.raises(DetectorException, match='Upload failed'):
         await detector.upload(_camera_image())
-    with pytest.raises(DetectorException, match='Detection cancelled'):
+    with pytest.raises(DetectorException, match='Detection failed'):
         await detector.detect(_camera_image(), lazy=False)
 
 

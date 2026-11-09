@@ -305,7 +305,7 @@ class DetectorHardware(Detector):
             return self._image_payload(image)
         payload = await run.io_bound(self._image_payload, image)
         if payload is None:
-            raise asyncio.CancelledError
+            raise DetectorException('Image preparation was interrupted by shutdown')
         return payload
 
     def _image_payload(self, image: Image) -> dict[str, Any]:

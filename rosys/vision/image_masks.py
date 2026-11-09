@@ -14,7 +14,8 @@ from .image import Image, ImageArray
 class ImageMasks:
     """Per-camera masks that gray out regions of an image.
 
-    Each camera id maps to polygons in normalized image coordinates (x and y between 0 and 1),
+    Each camera id maps to polygons in normalized image coordinates
+    (x and y from 0 to 1, origin in the top-left corner, y pointing down),
     so the same polygons fit every resolution a camera may deliver.
     Pixels inside a camera's polygons are replaced by ``FILL_VALUE``, all others are kept;
     along the outlines, which are grayed out as well, the result is accurate to about a pixel.
