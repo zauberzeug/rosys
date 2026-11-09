@@ -1,6 +1,6 @@
 import abc
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -115,7 +115,7 @@ class Detector(abc.ABC):
     this applies to detection and upload alike, while the images themselves stay untouched.
     """
 
-    def __init__(self, *, name: str | None = None, masks: Mapping[str, Sequence[Polygon]] | None = None) -> None:
+    def __init__(self, *, name: str | None = None, masks: Mapping[str, Iterable[Polygon]] | None = None) -> None:
         self.name = name or str(uuid4())
         self.masks = ImageMasks(masks)
 

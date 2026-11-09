@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
@@ -44,7 +44,7 @@ class DetectorSimulation(Detector):
                  noise: float = 1.0,
                  detection_delay: float = 0.4,
                  name: str | None = None,
-                 masks: Mapping[str, Sequence[Polygon]] | None = None,
+                 masks: Mapping[str, Iterable[Polygon]] | None = None,
                  ) -> None:
         super().__init__(name=name, masks=masks)
 

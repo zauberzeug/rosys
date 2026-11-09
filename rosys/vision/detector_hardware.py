@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from typing import Any, Literal
 
@@ -56,7 +56,7 @@ class DetectorHardware(Detector):
                  sio_timeout: int = 5,
                  image_transmission_format: ImageTransmissionFormat = ImageTransmissionFormat.RAW,
                  jpeg_quality: int = DEFAULT_JPEG_QUALITY,
-                 masks: Mapping[str, Sequence[Polygon]] | None = None) -> None:
+                 masks: Mapping[str, Iterable[Polygon]] | None = None) -> None:
         super().__init__(name=name, masks=masks)
         validate_jpeg_quality(jpeg_quality)
 
