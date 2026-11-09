@@ -203,8 +203,8 @@ class LizardFirmware:
         if not self.selected_online_version:
             rosys.notify('No version selected.', 'warning')
             return
-        if self._version_refusal(self.selected_online_version, 'Downloading failed') is not None:
-            self._warn_version(self.selected_online_version, 'Downloading failed')
+        if (reason := self._version_refusal(self.selected_online_version, 'Downloading failed')) is not None:
+            rosys.notify(reason, 'negative', log_level=logging.WARNING)
             return
         assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
