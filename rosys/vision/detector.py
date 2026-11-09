@@ -53,7 +53,7 @@ class DetectorException(Exception):
 
 @dataclass(slots=True, kw_only=True)
 class BatchImageMetadata:
-    """Per-image metadata of a batch; tags add to the batch's, source and creation date replace the batch's."""
+    """Metadata of one image in ``Detector.batch_detect``; its camera is always the image's own ``camera_id``."""
 
     tags: list[str] = field(default_factory=list)
     source: str | None = None
@@ -161,6 +161,11 @@ class Detector(abc.ABC):
         """Runs detections on all images and fills each ``image.detections`` property.
 
         Result order matches ``images``, and so must ``image_metadata``.
+
+        :param tags: tags of every image; an image's own tags are added
+        :param source: source of every image, unless the image sets its own
+        :param creation_date: creation date of every image, unless the image sets its own
+        :param image_metadata: one entry per image, see ``BatchImageMetadata``
         """
 
     @abc.abstractmethod
