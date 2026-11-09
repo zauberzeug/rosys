@@ -241,6 +241,7 @@ class LizardFirmware:
         finally:
             self.robot_brain.communication.connect()
         await self.read_core_version()
+        self.progress = 'Finished.'
         rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self, timeout: float = 120) -> None:
@@ -270,6 +271,7 @@ class LizardFirmware:
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
+        self.progress = 'Finished.'
         rosys.notify('Finished.', 'positive')
 
     async def _stream(self, command: list[str]) -> None:
