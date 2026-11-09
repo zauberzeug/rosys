@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 log = logging.getLogger('rosys.image_route')
 
 MAX_CONCURRENT_ENCODINGS: int = getattr(os, 'process_cpu_count', os.cpu_count)() or 4
-"""Images encoded at the same time, as many as the process pool has workers (one per CPU);
-further requests wait without holding a frame, so a burst cannot pile up frames."""
+"""Images encoded at the same time, as many as the process pool has workers (one per CPU), so the route can use
+the whole pool; further requests wait without holding a frame, so a burst cannot pile up frames."""
 JPEG_CACHE_SIZE = 16
 """Encoded images kept for other clients that ask for the same frame with the same parameters."""
 
@@ -56,15 +56,26 @@ class _Encoding:
             self.cache.popitem(last=False)
 
 
-_encodings: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, _Encoding] = weakref.WeakKeyDictionary()
+class _Encodings:
+    """The encoding state of the running event loop, replaced when another loop runs, e.g. in tests.
+
+    A semaphore binds to the first loop that waits on it and keeps it, so the state refers to its loop weakly
+    and is dropped together with the loop it belonged to.
+    """
+
+    def __init__(self) -> None:
+        self._loop: weakref.ref[asyncio.AbstractEventLoop] | None = None
+        self._encoding = _Encoding()
+
+    def current(self) -> _Encoding:
+        loop = asyncio.get_running_loop()
+        if self._loop is None or self._loop() is not loop:
+            self._loop = weakref.ref(loop)
+            self._encoding = _Encoding()
+        return self._encoding
 
 
-def _current_encoding() -> _Encoding:
-    loop = asyncio.get_running_loop()
-    encoding = _encodings.get(loop)
-    if encoding is None:  # NOTE: one per loop, since a semaphore binds to the first loop that waits on it
-        encoding = _encodings[loop] = _Encoding()
-    return encoding
+_encodings = _Encodings()
 
 
 def create_image_route(camera: Camera) -> None:
@@ -207,18 +218,25 @@ async def _try_get_jpeg(camera: Camera,
     """Encode the camera's frame of ``timestamp``, at most ``MAX_CONCURRENT_ENCODINGS`` at a time.
 
     A request looks up its frame only once it holds a slot, so waiting requests keep no frame alive,
-    and a frame that left the camera's buffer meanwhile is answered with ``None`` at once.
+    and a frame that left the camera's buffer is answered with ``None`` without waiting for a slot.
     Clients asking for the same frame with the same parameters share one encoding and its cached result.
     """
-    key: JpegKey = (camera.id, timestamp, shrink, max_dimension, undistort, fast, compression,
+    key: JpegKey = (camera.base_path, timestamp, shrink, max_dimension, undistort, fast, compression,
                     None if crop is None else (crop.x, crop.y, crop.width, crop.height), rotation)
-    encoding = _current_encoding()
-    jpeg = encoding.cached(key)
-    if jpeg is not None:
-        return jpeg
-    pending = encoding.pending.get(key)
-    if pending is not None:
-        return await asyncio.shield(pending)
+    encoding = _encodings.current()
+    while True:
+        jpeg = encoding.cached(key)
+        if jpeg is not None:
+            return jpeg
+        if not any(str(image.time) == timestamp for image in camera.images):
+            return None
+        pending = encoding.pending.get(key)
+        if pending is None:
+            break
+        jpeg = await asyncio.shield(pending)
+        if jpeg is not None:
+            return jpeg
+        # NOTE: the request that encoded this image got none, e.g. it was cancelled, so try again
     future: asyncio.Future[bytes | None] = asyncio.get_running_loop().create_future()
     encoding.pending[key] = future
     try:
@@ -231,7 +249,7 @@ async def _try_get_jpeg(camera: Camera,
         return jpeg
     finally:
         del encoding.pending[key]
-        future.set_result(jpeg)  # NOTE: if this request failed or was cancelled, the others get no image either
+        future.set_result(jpeg)
 
 
 async def _encode_frame(camera: Camera,

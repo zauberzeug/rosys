@@ -1,5 +1,5 @@
 import asyncio
-import weakref
+import pickle
 from collections import deque
 from types import SimpleNamespace
 from typing import Any
@@ -9,7 +9,8 @@ import pytest
 
 from rosys.vision import image_route
 from rosys.vision.image import Image
-from rosys.vision.image_route import _try_get_jpeg
+from rosys.vision.image_rotation import ImageRotation
+from rosys.vision.image_route import _process, _try_get_jpeg
 
 MAX_CONCURRENT_ENCODINGS = 3
 """The bound in these tests, independent of the CPUs of the machine running them."""
@@ -23,14 +24,15 @@ class _Encoder:
         self.most_running = 0
         self.arrays: list[np.ndarray] = []
         self.release = asyncio.Event()
+        self.result: bytes | None = b'jpeg'
 
-    async def __call__(self, _callback: Any, array: np.ndarray, *_args: Any) -> bytes:
+    async def __call__(self, _callback: Any, array: np.ndarray, *_args: Any) -> bytes | None:
         self.running += 1
         self.most_running = max(self.most_running, self.running)
         self.arrays.append(array)
         try:
             await self.release.wait()
-            return f'jpeg {array.shape}'.encode()
+            return None if self.result is None else self.result + f' {array.shape}'.encode()
         finally:
             self.running -= 1
 
@@ -40,19 +42,22 @@ def encoder(monkeypatch: pytest.MonkeyPatch) -> _Encoder:
     encoder = _Encoder()
     monkeypatch.setattr(image_route.run, 'cpu_bound', encoder)
     monkeypatch.setattr(image_route, 'MAX_CONCURRENT_ENCODINGS', MAX_CONCURRENT_ENCODINGS)  # read per event loop
-    monkeypatch.setattr(image_route, '_encodings', weakref.WeakKeyDictionary())  # tests may share one event loop
+    monkeypatch.setattr(image_route, '_encodings', image_route._Encodings())  # tests may share one event loop
     return encoder
 
 
-def _camera(times: range, *, height: int = 6, width: int = 9) -> Any:
-    images = [Image.from_array(np.zeros((height, width, 3), dtype=np.uint8), camera_id='cam', time=float(t + 1))  # NOTE: from_array replaces a time of 0
+def _camera(times: range, *, height: int = 6, width: int = 9, array: np.ndarray | None = None) -> Any:
+    # NOTE: from_array replaces a time of 0 with the current time, so the frames start at 1
+    images = [Image.from_array(np.zeros((height, width, 3), dtype=np.uint8) if array is None else array,
+                               camera_id='cam', time=float(t + 1))
               for t in times]
-    return SimpleNamespace(id='cam', images=deque(images), calibration=None)
+    return SimpleNamespace(id='cam', base_path='images/cam', images=deque(images), calibration=None)
 
 
-async def _request(camera: Any, time: int, *, shrink: float = 1.0) -> bytes | None:
-    return await _try_get_jpeg(camera, str(float(time + 1)), shrink=shrink, max_dimension=None,
-                               undistort=False, fast=True, compression=90)
+async def _request(camera: Any, time: int, *, shrink: float = 1.0, max_dimension: float | None = None,
+                   fast: bool = True) -> bytes | None:
+    return await _try_get_jpeg(camera, str(float(time + 1)), shrink=shrink, max_dimension=max_dimension,
+                               undistort=False, fast=fast, compression=90)
 
 
 async def _settle() -> None:
@@ -84,7 +89,19 @@ async def test_a_frame_that_left_the_buffer_while_waiting_is_not_encoded(encoder
     results = await asyncio.gather(*requests)
 
     assert len(encoder.arrays) == MAX_CONCURRENT_ENCODINGS
+    assert all(result is not None for result in results[:MAX_CONCURRENT_ENCODINGS])
     assert results[MAX_CONCURRENT_ENCODINGS:] == [None] * MAX_CONCURRENT_ENCODINGS
+
+
+async def test_a_frame_that_is_gone_is_answered_without_waiting_for_a_slot(encoder: _Encoder) -> None:
+    camera = _camera(range(MAX_CONCURRENT_ENCODINGS))
+    busy = [asyncio.create_task(_request(camera, t)) for t in range(MAX_CONCURRENT_ENCODINGS)]
+    await _settle()
+
+    assert await asyncio.wait_for(_request(camera, 99), timeout=1.0) is None
+
+    encoder.release.set()
+    await asyncio.gather(*busy)
 
 
 async def test_clients_asking_for_the_same_image_share_one_encoding(encoder: _Encoder) -> None:
@@ -101,11 +118,58 @@ async def test_clients_asking_for_the_same_image_share_one_encoding(encoder: _En
     assert len(encoder.arrays) == 2
 
 
+async def test_a_client_waiting_for_a_cancelled_encoding_encodes_the_image_itself(encoder: _Encoder) -> None:
+    camera = _camera(range(1))
+    owner = asyncio.create_task(_request(camera, 0))
+    await _settle()
+    waiter = asyncio.create_task(_request(camera, 0))
+    await _settle()
+
+    owner.cancel()
+    await _settle()
+    encoder.release.set()
+
+    assert await waiter is not None
+    assert len(encoder.arrays) == 2
+
+
+async def test_no_image_is_not_cached(encoder: _Encoder) -> None:
+    """``run.cpu_bound`` gives ``None`` while the server stops; the next request must encode again."""
+    encoder.release.set()
+    encoder.result = None
+    camera = _camera(range(1))
+    assert await _request(camera, 0) is None
+
+    encoder.result = b'jpeg'
+    assert await _request(camera, 0) is not None
+    assert len(encoder.arrays) == 2
+
+
 async def test_a_fast_shrink_sends_only_the_kept_pixels_to_the_worker(encoder: _Encoder) -> None:
     encoder.release.set()
-    camera = _camera(range(1), height=6, width=9)
+    camera = _camera(range(1), height=60, width=90)
 
     await _request(camera, 0, shrink=3)
 
-    assert encoder.arrays[0].shape == (2, 3, 3)
+    assert encoder.arrays[0].shape == (20, 30, 3)
     assert np.shares_memory(encoder.arrays[0], camera.images[0].array)  # a view; pickling copies only its pixels
+    assert len(pickle.dumps(encoder.arrays[0])) < camera.images[0].array.nbytes / 2
+
+
+@pytest.mark.parametrize('shrink', [1.0, 1.5, 3.0])
+@pytest.mark.parametrize('fast', [True, False])
+@pytest.mark.parametrize('max_dimension', [None, 7.0])
+async def test_the_route_encodes_the_same_jpeg_as_processing_the_whole_image(
+        monkeypatch: pytest.MonkeyPatch, shrink: float, fast: bool, max_dimension: float | None) -> None:
+    async def encode_like_a_worker(callback: Any, *args: Any) -> Any:
+        return callback(*pickle.loads(pickle.dumps(args)))  # NOTE: the worker receives what pickling keeps
+    monkeypatch.setattr(image_route.run, 'cpu_bound', encode_like_a_worker)
+    monkeypatch.setattr(image_route, '_encodings', image_route._Encodings())
+    array = np.random.default_rng(1).integers(0, 255, (12, 18, 3), dtype=np.uint8)
+    camera = _camera(range(1), array=array)
+    image = camera.images[0]
+
+    jpeg = await _request(camera, 0, shrink=shrink, max_dimension=max_dimension, fast=fast)
+
+    shrink_from_max = max(image.size.width, image.size.height) / max_dimension if max_dimension else shrink
+    assert jpeg == _process(image, None, max(1, shrink, shrink_from_max), False, fast, 90, None, ImageRotation.NONE)
