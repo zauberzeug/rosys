@@ -291,11 +291,10 @@ class LizardFirmware:
                 lines.append(line)
                 if line:
                     self.progress = line
-            await process.wait()
         finally:
-            if process.returncode is None:
-                process.terminate()
-                await process.wait()
+            # NOTE: sudo passes SIGTERM to the script but not to esptool, which would keep writing while the serial
+            # port is reopened; a cancelled flash therefore runs to its end
+            await process.communicate()
         self.log.info('%s (exit %s):\n%s', ' '.join(command), process.returncode, '\n'.join(lines))
         if process.returncode != 0:
             self._fail(f'Flashing failed: {self.progress}')

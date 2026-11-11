@@ -198,8 +198,8 @@ async def test_stream_strips_colour_codes(lizard_firmware: LizardFirmware) -> No
     assert lizard_firmware.progress == 'Flashing failed: failed'
 
 
-async def test_stream_terminates_script_on_cancellation(lizard_firmware: LizardFirmware, tmp_path: Path) -> None:
-    """Cancelling the stream ends the script before the cancellation propagates."""
+async def test_stream_waits_for_script_on_cancellation(lizard_firmware: LizardFirmware, tmp_path: Path) -> None:
+    """Cancelling the stream lets the script finish before the cancellation propagates."""
     marker = tmp_path / 'marker'
     script = f'echo started; sleep 0.3; touch {marker}'
     task = asyncio.create_task(lizard_firmware._stream(['sh', '-c', script]))  # pylint: disable=protected-access
@@ -208,8 +208,7 @@ async def test_stream_terminates_script_on_cancellation(lizard_firmware: LizardF
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
-    await asyncio.sleep(0.6)
-    assert not marker.exists()
+    assert marker.exists()
 
 
 @pytest.mark.parametrize('target', ['core', 'p0'])
