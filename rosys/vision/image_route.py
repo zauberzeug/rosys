@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
+import os
 import weakref
+from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 import cv2
@@ -22,7 +25,49 @@ if TYPE_CHECKING:
 
 log = logging.getLogger('rosys.image_route')
 
+MAX_CONCURRENT_ENCODINGS: int = max(1, (getattr(os, 'process_cpu_count', os.cpu_count)() or 4) - 1)
+"""Images encoded at the same time: one worker of the process pool (one per CPU) stays free for its other jobs;
+further requests wait without holding a frame, so a burst cannot pile up frames."""
+JPEG_CACHE_SIZE = 16
+"""Encoded images kept for other clients that ask for the same frame with the same parameters."""
+
 _route_owners: dict[str, weakref.ref[Camera]] = {}
+
+JpegKey = tuple[object, ...]
+
+
+class _Encoding:
+    """The encoding slots and the cache of the image routes."""
+
+    def __init__(self) -> None:
+        self.slots = asyncio.Semaphore(MAX_CONCURRENT_ENCODINGS)
+        self.cache: OrderedDict[JpegKey, bytes] = OrderedDict()
+        self.pending: dict[JpegKey, asyncio.Future[bytes | None]] = {}
+
+    def cached(self, key: JpegKey) -> bytes | None:
+        jpeg = self.cache.get(key)
+        if jpeg is not None:
+            self.cache.move_to_end(key)
+        return jpeg
+
+    def remember(self, key: JpegKey, jpeg: bytes) -> None:
+        self.cache[key] = jpeg
+        while len(self.cache) > JPEG_CACHE_SIZE:
+            self.cache.popitem(last=False)
+
+
+_encoding = _Encoding()
+
+
+def reset_encodings() -> None:
+    """Free the encoding slots and empty the cache, e.g. between tests.
+
+    Every test runs its own event loop and starts at time 0, while the slots bind to the first loop that waits on them
+    and the cache would answer with the image another test encoded for the same timestamp.
+    """
+    _encoding.slots = asyncio.Semaphore(MAX_CONCURRENT_ENCODINGS)
+    _encoding.cache.clear()
+    _encoding.pending.clear()
 
 
 def create_image_route(camera: Camera) -> None:
@@ -162,14 +207,63 @@ async def _try_get_jpeg(camera: Camera,
                         compression: int,
                         crop: Rectangle | None = None,
                         rotation: ImageRotation = ImageRotation.NONE) -> bytes | None:
+    """Encode the camera's frame of ``timestamp``, at most ``MAX_CONCURRENT_ENCODINGS`` at a time.
+
+    A request looks up its frame only once it holds a slot, so waiting requests keep no frame alive,
+    and a frame that left the camera's buffer is answered with ``None`` without waiting for a slot.
+    Clients asking for the same frame with the same parameters share one encoding and its cached result.
+    """
+    key: JpegKey = (camera.base_path, timestamp, shrink, max_dimension, undistort, fast, compression,
+                    None if crop is None else (crop.x, crop.y, crop.width, crop.height), rotation)
+    encoding = _encoding
+    while True:
+        jpeg = encoding.cached(key)
+        if jpeg is not None:
+            return jpeg
+        if not any(str(image.time) == timestamp for image in camera.images):
+            return None
+        pending = encoding.pending.get(key)
+        if pending is None:
+            break
+        jpeg = await asyncio.shield(pending)
+        if jpeg is not None:
+            return jpeg
+        # NOTE: the request that encoded this image got none, e.g. it was cancelled, so try again
+    future: asyncio.Future[bytes | None] = asyncio.get_running_loop().create_future()
+    encoding.pending[key] = future
+    jpeg = None
+    try:
+        async with encoding.slots:
+            jpeg = await _encode_frame(camera, timestamp, shrink=shrink, max_dimension=max_dimension,
+                                       undistort=undistort, fast=fast, compression=compression,
+                                       crop=crop, rotation=rotation)
+        if jpeg is not None:
+            encoding.remember(key, jpeg)
+        return jpeg
+    finally:
+        del encoding.pending[key]
+        future.set_result(jpeg)
+
+
+async def _encode_frame(camera: Camera,
+                        timestamp: str, *,
+                        shrink: float,
+                        max_dimension: float | None,
+                        undistort: bool,
+                        fast: bool,
+                        compression: int,
+                        crop: Rectangle | None,
+                        rotation: ImageRotation) -> bytes | None:
     for image in reversed(camera.images):
         if str(image.time) == timestamp:
             shrink_from_max = max(image.size.width, image.size.height) / max_dimension if max_dimension else shrink
 
             shrink = max(1, shrink, shrink_from_max)
 
-            if shrink == 1 and not undistort and crop is None and rotation == ImageRotation.NONE:
-                return await run.cpu_bound(encode_image_as_jpeg, image.array, compression)
+            if not undistort and crop is None and rotation == ImageRotation.NONE and (shrink == 1 or fast):
+                # NOTE: a view of every step-th pixel pickles only those pixels, so the worker receives what it encodes
+                step = math.ceil(shrink)
+                return await run.cpu_bound(encode_image_as_jpeg, image.array[::step, ::step], compression)
 
             calibration = camera.calibration if undistort else None  # type: ignore
             return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression,
