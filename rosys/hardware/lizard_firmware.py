@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 # NOTE: the flash scripts and esptool block-buffer their output when stdout is a pipe
 SUDO_UNBUFFERED = ['sudo', 'env', 'PYTHONUNBUFFERED=1']
+ANSI_SGR_PATTERN = re.compile(r'\x1b\[[0-9;]*m')
 
 
 class LizardFirmware:
@@ -286,7 +287,7 @@ class LizardFirmware:
         lines = []
         try:
             async for raw in process.stdout:
-                line = raw.decode(errors='replace').rstrip()
+                line = ANSI_SGR_PATTERN.sub('', raw.decode(errors='replace')).rstrip()
                 lines.append(line)
                 if line:
                     self.progress = line

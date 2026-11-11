@@ -194,6 +194,14 @@ async def test_stream_reports_progress_and_exit_code(lizard_firmware: LizardFirm
     assert lizard_firmware.progress == expected_progress
 
 
+async def test_stream_strips_colour_codes(lizard_firmware: LizardFirmware) -> None:
+    """ANSI colour codes of the script output reach neither the progress nor the error message."""
+    script = r"printf '\033[1m\033[91mfailed\033[0m\033[0m\n'; exit 1"
+    with pytest.raises(FirmwareFlashError, match=r'^Flashing failed: failed$'):
+        await lizard_firmware._stream(['sh', '-c', script])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'Flashing failed: failed'
+
+
 async def test_stream_terminates_script_on_cancellation(lizard_firmware: LizardFirmware, tmp_path: Path) -> None:
     """Cancelling the stream ends the script before the cancellation propagates."""
     marker = tmp_path / 'marker'
