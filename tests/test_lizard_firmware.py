@@ -116,8 +116,7 @@ async def test_download_refusal(lizard_firmware: LizardFirmware, notifications: 
     ('0.14.0', 'not supported'),
     ('0.13.0', None),
 ])
-async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications: list[str],
-                                  monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+async def test_flash_version_gate(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
                                   target: str, attr: str, proceeds_to: str,
                                   version: str | None, expected_message: str | None) -> None:
     """The version gate refuses unknown and unsupported versions; supported ones proceed to the next check."""
@@ -131,7 +130,7 @@ async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications
     assert expected_message in str(task.exception())
 
 
-async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, notifications: list[str],
+async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware,
                                               monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Flashing the core reads the local version by itself if it has not been read yet."""
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
