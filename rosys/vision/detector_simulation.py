@@ -133,7 +133,9 @@ class DetectorSimulation(Detector):
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
             if polygons:
-                normalized_point = Point(x=image_point.x / image.size.width, y=image_point.y / image.size.height)
+                # NOTE: pixel centers sit at integer coordinates, while normalized 0 and 1 are the image's outer edges
+                normalized_point = Point(x=(image_point.x + 0.5) / image.size.width,
+                                         y=(image_point.y + 0.5) / image.size.height)
                 if any(polygon.contains(normalized_point) for polygon in polygons):
                     continue
 

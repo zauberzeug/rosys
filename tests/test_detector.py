@@ -231,3 +231,22 @@ async def test_the_simulation_does_not_detect_objects_inside_the_masks(rosys_int
     assert detections is not None
     assert len(detections.points) == 1
     assert detections.points[0].x > 400
+
+
+@pytest.mark.parametrize('pixel_x, detected', [(399.25, False), (399.75, True)])
+async def test_the_simulation_places_the_mask_outline_like_the_masked_image(rosys_integration,
+                                                                            pixel_x: float, detected: bool):
+    camera = CalibratableCamera.create_calibrated(id='cam', width=800, height=600, connect_after_init=False)
+    assert camera.calibration is not None
+    position = camera.calibration.project_from_image(Point(x=pixel_x, y=300))
+    assert position is not None
+    detector = DetectorSimulation(_Cameras(camera), noise=0, masks={'cam': [LEFT_HALF]})  # outline at pixel x = 399.5
+    detector.simulated_objects = [SimulatedObject(category_name='obj', position=position)]
+    image = Image.from_array(np.zeros((600, 800, 3), dtype=np.uint8), camera_id='cam')
+
+    task = asyncio.create_task(detector.detect(image))
+    await forward(1.0)
+    detections = await task
+
+    assert detections is not None
+    assert len(detections.points) == (1 if detected else 0)

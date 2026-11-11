@@ -52,6 +52,17 @@ def test_a_polygon_over_the_full_range_fills_the_whole_image():
     assert np.all(masks.apply(_image()) == ImageMasks.FILL_VALUE)
 
 
+@pytest.mark.parametrize('overshoot', [0.1, 5.0, 1e12])
+def test_polygons_may_reach_past_the_image_edges(overshoot: float):
+    low, high = -overshoot, 1 + overshoot
+    image = _image()
+    assert np.all(ImageMasks({'cam': [_polygon((low, low), (high, low), (high, high), (low, high))]}).apply(image)
+                  == ImageMasks.FILL_VALUE)
+    past_the_left_edge = _polygon((low, low), (0.5, low), (0.5, high), (low, high))
+    assert np.array_equal(ImageMasks({'cam': [past_the_left_edge]}).apply(image),
+                          ImageMasks({'cam': [LEFT_HALF]}).apply(image))
+
+
 def test_several_polygons_are_combined():
     masks = ImageMasks({'cam': [LEFT_HALF, RIGHT_HALF]})
     assert np.all(masks.apply(_image()) == ImageMasks.FILL_VALUE)
@@ -166,8 +177,8 @@ def test_removing_the_polygons_lets_the_camera_pass_through_again():
 
 @pytest.mark.parametrize('polygons, message', [
     ([_polygon((0, 0), (1, 1))], 'at least three points'),
-    ([_polygon((0, 0), (1.5, 0), (1, 1))], 'outside the normalized range'),
-    ([_polygon((0, -0.1), (1, 0), (1, 1))], 'outside the normalized range'),
+    ([_polygon((0, 0), (float('nan'), 0), (1, 1))], 'not finite'),
+    ([_polygon((0, float('-inf')), (1, 0), (1, 1))], 'not finite'),
 ])
 def test_invalid_polygons_are_rejected_when_they_are_set(polygons: list[Polygon], message: str):
     masks = ImageMasks()

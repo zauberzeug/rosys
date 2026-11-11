@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 from types import MappingProxyType
 from typing import ClassVar
@@ -20,6 +21,8 @@ class ImageMasks:
     Pixels inside a camera's polygons are replaced by ``FILL_VALUE``, all others are kept;
     along the outlines, which are grayed out as well, the result is accurate to about a pixel.
     Polygons may overlap, and a polygon reaching 0 and 1 covers the full width or height of the image.
+    Points may lie outside that range, so a polygon can be drawn past the image edge to be sure it reaches the border;
+    only the part inside the image has an effect.
     A camera without polygons passes its images through unchanged.
     """
 
@@ -46,9 +49,9 @@ class ImageMasks:
         """Replace the polygons of a camera.
 
         :param camera_id: the camera the polygons apply to
-        :param polygons: polygons with at least three points each and all coordinates between 0 and 1;
+        :param polygons: polygons with at least three points each;
             without any polygons the camera passes its images through unchanged
-        :raises ValueError: if a polygon has fewer than three points or a point lies outside the normalized range
+        :raises ValueError: if a polygon has fewer than three points or a coordinate is not finite
         """
         camera_polygons = tuple(polygons)
         if not camera_polygons:
@@ -59,9 +62,8 @@ class ImageMasks:
                 raise ValueError(f'Polygon for camera "{camera_id}" needs at least three points, '
                                  f'got {len(polygon.outline)}')
             for point in polygon.outline:
-                if not (0.0 <= point.x <= 1.0 and 0.0 <= point.y <= 1.0):
-                    raise ValueError(f'Polygon for camera "{camera_id}" has a point outside the normalized range: '
-                                     f'{point}')
+                if not (math.isfinite(point.x) and math.isfinite(point.y)):
+                    raise ValueError(f'Polygon for camera "{camera_id}" has a point that is not finite: {point}')
         self._polygons[camera_id] = camera_polygons
 
     def remove(self, camera_id: str) -> None:
@@ -103,6 +105,8 @@ def _contour(polygon: Polygon, width: int, height: int) -> np.ndarray:
     """Convert a polygon in normalized coordinates to fixed-point pixel coordinates for OpenCV.
 
     Normalized 0 and 1 are the outer edges of the image, while OpenCV places pixel centers at integer coordinates.
+    Points too far outside the image for the fixed-point format are pulled in to its limits.
     """
     points = np.array([[point.x * width, point.y * height] for point in polygon.outline]) - 0.5
-    return np.round(points * (1 << _FRACTIONAL_BITS)).astype(np.int32)
+    limits = np.iinfo(np.int32)
+    return np.clip(np.round(points * (1 << _FRACTIONAL_BITS)), limits.min, limits.max).astype(np.int32)
