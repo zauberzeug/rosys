@@ -25,9 +25,9 @@ if TYPE_CHECKING:
 
 log = logging.getLogger('rosys.image_route')
 
-MAX_CONCURRENT_ENCODINGS: int = getattr(os, 'process_cpu_count', os.cpu_count)() or 4
-"""Images encoded at the same time, as many as the process pool has workers (one per CPU), so the route can use
-the whole pool; further requests wait without holding a frame, so a burst cannot pile up frames."""
+MAX_CONCURRENT_ENCODINGS: int = max(1, (getattr(os, 'process_cpu_count', os.cpu_count)() or 4) - 1)
+"""Images encoded at the same time: one worker of the process pool (one per CPU) stays free for its other jobs;
+further requests wait without holding a frame, so a burst cannot pile up frames."""
 JPEG_CACHE_SIZE = 16
 """Encoded images kept for other clients that ask for the same frame with the same parameters."""
 
@@ -37,7 +37,7 @@ JpegKey = tuple[object, ...]
 
 
 class _Encoding:
-    """The encoding slots and the cache of one event loop."""
+    """The encoding slots and the cache of the image routes."""
 
     def __init__(self) -> None:
         self.slots = asyncio.Semaphore(MAX_CONCURRENT_ENCODINGS)
@@ -56,26 +56,18 @@ class _Encoding:
             self.cache.popitem(last=False)
 
 
-class _Encodings:
-    """The encoding state of the running event loop, replaced when another loop runs, e.g. in tests.
+_encoding = _Encoding()
 
-    A semaphore binds to the first loop that waits on it and keeps it, so the state refers to its loop weakly
-    and is dropped together with the loop it belonged to.
+
+def reset_encodings() -> None:
+    """Free the encoding slots and empty the cache, e.g. between tests.
+
+    Every test runs its own event loop and starts at time 0, while the slots bind to the first loop that waits on them
+    and the cache would answer with the image another test encoded for the same timestamp.
     """
-
-    def __init__(self) -> None:
-        self._loop: weakref.ref[asyncio.AbstractEventLoop] | None = None
-        self._encoding = _Encoding()
-
-    def current(self) -> _Encoding:
-        loop = asyncio.get_running_loop()
-        if self._loop is None or self._loop() is not loop:
-            self._loop = weakref.ref(loop)
-            self._encoding = _Encoding()
-        return self._encoding
-
-
-_encodings = _Encodings()
+    _encoding.slots = asyncio.Semaphore(MAX_CONCURRENT_ENCODINGS)
+    _encoding.cache.clear()
+    _encoding.pending.clear()
 
 
 def create_image_route(camera: Camera) -> None:
@@ -223,7 +215,7 @@ async def _try_get_jpeg(camera: Camera,
     """
     key: JpegKey = (camera.base_path, timestamp, shrink, max_dimension, undistort, fast, compression,
                     None if crop is None else (crop.x, crop.y, crop.width, crop.height), rotation)
-    encoding = _encodings.current()
+    encoding = _encoding
     while True:
         jpeg = encoding.cached(key)
         if jpeg is not None:
@@ -239,6 +231,7 @@ async def _try_get_jpeg(camera: Camera,
         # NOTE: the request that encoded this image got none, e.g. it was cancelled, so try again
     future: asyncio.Future[bytes | None] = asyncio.get_running_loop().create_future()
     encoding.pending[key] = future
+    jpeg = None
     try:
         async with encoding.slots:
             jpeg = await _encode_frame(camera, timestamp, shrink=shrink, max_dimension=max_dimension,

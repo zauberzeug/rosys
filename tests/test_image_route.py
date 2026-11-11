@@ -41,8 +41,8 @@ class _Encoder:
 def encoder(monkeypatch: pytest.MonkeyPatch) -> _Encoder:
     encoder = _Encoder()
     monkeypatch.setattr(image_route.run, 'cpu_bound', encoder)
-    monkeypatch.setattr(image_route, 'MAX_CONCURRENT_ENCODINGS', MAX_CONCURRENT_ENCODINGS)  # read per event loop
-    monkeypatch.setattr(image_route, '_encodings', image_route._Encodings())  # tests may share one event loop
+    monkeypatch.setattr(image_route, 'MAX_CONCURRENT_ENCODINGS', MAX_CONCURRENT_ENCODINGS)
+    monkeypatch.setattr(image_route, '_encoding', image_route._Encoding())  # NOTE: with the bound of these tests
     return encoder
 
 
@@ -133,6 +133,23 @@ async def test_a_client_waiting_for_a_cancelled_encoding_encodes_the_image_itsel
     assert len(encoder.arrays) == 2
 
 
+async def test_a_cancelled_waiter_leaves_the_shared_encoding_to_the_others(encoder: _Encoder) -> None:
+    camera = _camera(range(1))
+    owner = asyncio.create_task(_request(camera, 0))
+    await _settle()
+    leaving = asyncio.create_task(_request(camera, 0))
+    staying = asyncio.create_task(_request(camera, 0))
+    await _settle()
+
+    leaving.cancel()
+    await _settle()
+    encoder.release.set()
+
+    assert await owner is not None
+    assert await staying is not None
+    assert len(encoder.arrays) == 1
+
+
 async def test_no_image_is_not_cached(encoder: _Encoder) -> None:
     """``run.cpu_bound`` gives ``None`` while the server stops; the next request must encode again."""
     encoder.release.set()
@@ -143,6 +160,35 @@ async def test_no_image_is_not_cached(encoder: _Encoder) -> None:
     encoder.result = b'jpeg'
     assert await _request(camera, 0) is not None
     assert len(encoder.arrays) == 2
+
+
+def test_a_reset_frees_the_slots_for_another_event_loop_and_empties_the_cache(encoder: _Encoder) -> None:
+    camera = _camera(range(MAX_CONCURRENT_ENCODINGS + 1))
+
+    async def burst() -> list[bytes | None]:
+        encoder.release = asyncio.Event()
+        requests = [asyncio.create_task(_request(camera, t)) for t in range(MAX_CONCURRENT_ENCODINGS + 1)]
+        await _settle()  # NOTE: the last request waits for a slot, which binds the slots to this event loop
+        encoder.release.set()
+        return await asyncio.gather(*requests)
+
+    assert None not in asyncio.run(burst())
+    assert len(encoder.arrays) == MAX_CONCURRENT_ENCODINGS + 1
+
+    image_route.reset_encodings()
+
+    assert None not in asyncio.run(burst())
+    assert len(encoder.arrays) == 2 * (MAX_CONCURRENT_ENCODINGS + 1)
+
+
+@pytest.fixture
+def encodings_of_an_earlier_test() -> None:
+    image_route._encoding.cache[('earlier test',)] = b'jpeg'
+
+
+async def test_an_integration_test_starts_without_the_encodings_of_an_earlier_test(
+        encodings_of_an_earlier_test: None, rosys_integration: None) -> None:
+    assert not image_route._encoding.cache
 
 
 async def test_a_fast_shrink_sends_only_the_kept_pixels_to_the_worker(encoder: _Encoder) -> None:
@@ -164,7 +210,7 @@ async def test_the_route_encodes_the_same_jpeg_as_processing_the_whole_image(
     async def encode_like_a_worker(callback: Any, *args: Any) -> Any:
         return callback(*pickle.loads(pickle.dumps(args)))  # NOTE: the worker receives what pickling keeps
     monkeypatch.setattr(image_route.run, 'cpu_bound', encode_like_a_worker)
-    monkeypatch.setattr(image_route, '_encodings', image_route._Encodings())
+    monkeypatch.setattr(image_route, '_encoding', image_route._Encoding())
     array = np.random.default_rng(1).integers(0, 255, (12, 18, 3), dtype=np.uint8)
     camera = _camera(range(1), array=array)
     image = camera.images[0]
