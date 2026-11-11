@@ -1,3 +1,5 @@
+import asyncio
+import re
 from collections.abc import Generator
 from pathlib import Path
 
@@ -8,7 +10,7 @@ from test_robot_brain import CommunicationSimulation, connect  # pylint: disable
 
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
-from rosys.hardware.lizard_firmware import LizardFirmware
+from rosys.hardware.lizard_firmware import FirmwareFlashError, LizardFirmware
 from rosys.testing import forward
 
 
@@ -27,10 +29,13 @@ class VersionCommunicationSimulation(CommunicationSimulation):
         super().__init__()
         self.core_version = 'v0.13.0'
         self.p0_version = 'v0.13.0'
+        self.core_answers_pin_queries = False
 
     async def send(self, msg: str) -> None:
         await super().send(msg)
         line = msg.rsplit('@', 1)[0]
+        if self.core_answers_pin_queries and (match := re.fullmatch(r'core\.get_pin_status\((\d+)\)', line)):
+            self.incoming.append(f'GPIO_Status[{match.group(1)}]| Level: 0')
         if line == 'core.version()':
             self.incoming.append(f'version: {self.core_version}')
         if line == 'p0.version()':
@@ -104,33 +109,106 @@ async def test_download_refusal(lizard_firmware: LizardFirmware, notifications: 
     assert lizard_firmware.local_version is None
 
 
-@pytest.mark.parametrize('target, attr', [('core', 'local_version'), ('p0', 'core_version')])
+@pytest.mark.parametrize('target, attr, proceeds_to', [('core', 'local_version', 'does not answer'),
+                                                       ('p0', 'core_version', 'not ready')])
 @pytest.mark.parametrize('version, expected_message', [
     (None, 'version is unknown'),
     ('0.14.0', 'not supported'),
-    ('0.13.0', 'not ready'),
+    ('0.13.0', None),
 ])
-async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications: list[str],
-                                  monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-                                  target: str, attr: str, version: str | None, expected_message: str) -> None:
-    """The version gate refuses unknown and unsupported versions; supported ones proceed to the readiness check."""
+async def test_flash_version_gate(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                  target: str, attr: str, proceeds_to: str,
+                                  version: str | None, expected_message: str | None) -> None:
+    """The version gate refuses unknown and unsupported versions; supported ones proceed to the next check."""
+    expected_message = expected_message or proceeds_to
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     if version is not None:
         setattr(lizard_firmware, attr, version)
-    await getattr(lizard_firmware, f'flash_{target}')()
-    assert any(expected_message in message for message in notifications)
+    task = background_tasks.create(getattr(lizard_firmware, f'flash_{target}')(), name=f'flash {target}')
+    await forward(seconds=3.0)
+    assert isinstance(task.exception(), FirmwareFlashError)
+    assert expected_message in str(task.exception())
 
 
-async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, notifications: list[str],
+async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware,
                                               monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Flashing the core reads the local version by itself if it has not been read yet."""
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     (tmp_path / 'build').mkdir()
     (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
-    await lizard_firmware.flash_core()
+    task = background_tasks.create(lizard_firmware.flash_core(), name='flash core')
+    await forward(seconds=3.0)
     assert lizard_firmware.local_version == '0.13.0'
-    assert not any('version is unknown' in message for message in notifications)
-    assert any('not ready' in message for message in notifications)
+    assert 'does not answer' in str(task.exception())
+
+
+async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardFirmware,
+                                                        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Flashing a Core that never got ready leaves its version known, so flashing the P0 is not refused for it."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    communication.core_answers_pin_queries = True
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
+    monkeypatch.setattr('rosys.hardware.lizard_firmware.SerialCommunication', VersionCommunicationSimulation)
+    monkeypatch.setattr('rosys.hardware.lizard_firmware.SUDO_UNBUFFERED', [])
+    (tmp_path / 'build').mkdir()
+    (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
+    (tmp_path / 'flash.py').write_text('#!/bin/sh\n')
+    (tmp_path / 'flash.py').chmod(0o755)
+    task = background_tasks.create(lizard_firmware.flash_core(), name='flash core')
+    await forward(until=task.done, timeout=1000)
+    assert task.exception() is None
+    assert not lizard_firmware.robot_brain.is_ready
+    assert lizard_firmware.core_version == '0.13.0'
+    with pytest.raises(FirmwareFlashError, match='not ready'):
+        await lizard_firmware.flash_p0()
+
+
+async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFirmware) -> None:
+    """A P0 that does not answer the strapping pin query fails the flash with a ``FirmwareFlashError``."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    await connect(communication)
+    lizard_firmware.core_version = '0.13.0'
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(seconds=3.0)
+    assert isinstance(task.exception(), FirmwareFlashError)
+    assert str(task.exception()) == 'Flashing P0 failed. P0 does not answer.'
+    assert lizard_firmware.progress == 'Flashing P0 failed. P0 does not answer.'
+
+
+async def test_stream_reports_progress(lizard_firmware: LizardFirmware) -> None:
+    """The last output line becomes the progress."""
+    await lizard_firmware._stream(['sh', '-c', 'echo one; echo two'])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'two'
+
+
+async def test_stream_raises_on_non_zero_exit(lizard_firmware: LizardFirmware) -> None:
+    """A non-zero exit raises with the last output line."""
+    with pytest.raises(FirmwareFlashError, match='two'):
+        await lizard_firmware._stream(['sh', '-c', 'echo one; echo two; exit 1'])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'Flashing failed: two'
+
+
+async def test_stream_strips_colour_codes(lizard_firmware: LizardFirmware) -> None:
+    """ANSI colour codes of the script output reach neither the progress nor the error message."""
+    script = r"printf '\033[1m\033[91mfailed\033[0m\033[0m\n'; exit 1"
+    with pytest.raises(FirmwareFlashError, match=r'^Flashing failed: failed$'):
+        await lizard_firmware._stream(['sh', '-c', script])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'Flashing failed: failed'
+
+
+async def test_stream_waits_for_script_on_cancellation(lizard_firmware: LizardFirmware, tmp_path: Path) -> None:
+    """Cancelling the stream lets the script finish before the cancellation propagates."""
+    marker = tmp_path / 'marker'
+    script = f'echo started; sleep 0.3; touch {marker}'
+    task = asyncio.create_task(lizard_firmware._stream(['sh', '-c', script]))  # pylint: disable=protected-access
+    while lizard_firmware.progress != 'started':
+        await asyncio.sleep(0.01)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert marker.exists()
 
 
 @pytest.mark.parametrize('target', ['core', 'p0'])
