@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 class LizardFirmware:
     GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases'
+    PUBLIC_PROJECT = 'lizard'
     PATH = Path('~/.lizard').expanduser()
     PATH.mkdir(exist_ok=True)
     VERSION_LINE_PATTERN = re.compile(r'version: (?:(?P<project>\S+) )?(?P<version>\S+)')
@@ -105,7 +106,7 @@ class LizardFirmware:
             try:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
-                if not self.is_version_supported('lizard', version_name):
+                if not self.is_version_supported(self.PUBLIC_PROJECT, version_name):
                     self.log.debug('Lizard %s is not supported by this Robot Brain. Skipping.', version_name)
                     continue
                 assert 'assets' in item
@@ -161,14 +162,14 @@ class LizardFirmware:
     def _parse_version_line(cls, response: str) -> tuple[str | None, str | None]:
         """Parse a ``version: [<project>] <version>`` response into project name and version.
 
-        Firmware built before the project name was reported yields ``'lizard'``,
+        Firmware built before the project name was reported yields ``PUBLIC_PROJECT``,
         an unparsable response ``(None, None)``.
         """
         match = cls.VERSION_LINE_PATTERN.search(response)
         version = cls._parse_version(match.group('version')) if match else None
         if match is None or version is None:
             return None, None
-        return match.group('project') or 'lizard', version
+        return match.group('project') or cls.PUBLIC_PROJECT, version
 
     @classmethod
     def _parse_version(cls, token: str) -> str | None:
@@ -201,7 +202,7 @@ class LizardFirmware:
         if not self.selected_online_version:
             rosys.notify('No version selected.', 'warning')
             return
-        if self._refuse_version('lizard', self.selected_online_version, 'Downloading failed'):
+        if self._refuse_version(self.PUBLIC_PROJECT, self.selected_online_version, 'Downloading failed'):
             return
         assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
