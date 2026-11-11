@@ -1,3 +1,4 @@
+import re
 from collections.abc import Generator
 from pathlib import Path
 
@@ -27,10 +28,13 @@ class VersionCommunicationSimulation(CommunicationSimulation):
         super().__init__()
         self.core_version = 'v0.13.0'
         self.p0_version = 'v0.13.0'
+        self.core_answers_pin_queries = False
 
     async def send(self, msg: str) -> None:
         await super().send(msg)
         line = msg.rsplit('@', 1)[0]
+        if self.core_answers_pin_queries and (match := re.fullmatch(r'core\.get_pin_status\((\d+)\)', line)):
+            self.incoming.append(f'GPIO_Status[{match.group(1)}]| Level: 0')
         if line == 'core.version()':
             self.incoming.append(f'version: {self.core_version}')
         if line == 'p0.version()':
@@ -136,6 +140,28 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, n
     await forward(seconds=3.0)
     assert lizard_firmware.local_version == '0.13.0'
     assert 'does not answer' in str(task.exception())
+
+
+async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardFirmware,
+                                                        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Flashing a Core that never got ready leaves its version known, so flashing the P0 is not refused for it."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    communication.core_answers_pin_queries = True
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
+    monkeypatch.setattr('rosys.hardware.lizard_firmware.SerialCommunication', VersionCommunicationSimulation)
+    monkeypatch.setattr('rosys.hardware.lizard_firmware.SUDO_UNBUFFERED', [])
+    (tmp_path / 'build').mkdir()
+    (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
+    (tmp_path / 'flash.py').write_text('#!/bin/sh\n')
+    (tmp_path / 'flash.py').chmod(0o755)
+    task = background_tasks.create(lizard_firmware.flash_core(), name='flash core')
+    await forward(until=task.done, timeout=1000)
+    assert task.exception() is None
+    assert not lizard_firmware.robot_brain.is_ready
+    assert lizard_firmware.core_version == '0.13.0'
+    with pytest.raises(FirmwareFlashError, match='not ready'):
+        await lizard_firmware.flash_p0()
 
 
 @pytest.mark.parametrize('script, expected_progress', [

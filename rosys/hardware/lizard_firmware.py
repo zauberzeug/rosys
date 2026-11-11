@@ -136,12 +136,10 @@ class LizardFirmware:
         self.log.warning('No ESP32 app image found in %s', build_path)
 
     async def read_core_version(self) -> None:
-        if not self.robot_brain.is_ready:
-            self.log.error('Could not read Lizard version from Core. Robot Brain is not ready.')
-            return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
-            if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
+            # NOTE: a console query Lizard answers even when the startup script failed and the Core never got ready
+            if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1, force=True):
                 self.core_project, self.core_version = self._parse_version_line(response)
                 self._warn_version(self.core_version, 'Core')
                 return
