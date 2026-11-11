@@ -177,20 +177,17 @@ async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFir
     assert lizard_firmware.progress == 'Flashing P0 failed. P0 does not answer.'
 
 
-@pytest.mark.parametrize('script, expected_progress', [
-    ('echo one; echo two', 'two'),
-    ('echo one; echo two; exit 1', 'Flashing failed: two'),
-])
-async def test_stream_reports_progress_and_exit_code(lizard_firmware: LizardFirmware,
-                                                     script: str, expected_progress: str) -> None:
-    """The last output line becomes the progress; a non-zero exit raises with that line."""
-    stream = lizard_firmware._stream(['sh', '-c', script])  # pylint: disable=protected-access
-    if 'exit 1' in script:
-        with pytest.raises(FirmwareFlashError, match='two'):
-            await stream
-    else:
-        await stream
-    assert lizard_firmware.progress == expected_progress
+async def test_stream_reports_progress(lizard_firmware: LizardFirmware) -> None:
+    """The last output line becomes the progress."""
+    await lizard_firmware._stream(['sh', '-c', 'echo one; echo two'])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'two'
+
+
+async def test_stream_raises_on_non_zero_exit(lizard_firmware: LizardFirmware) -> None:
+    """A non-zero exit raises with the last output line."""
+    with pytest.raises(FirmwareFlashError, match='two'):
+        await lizard_firmware._stream(['sh', '-c', 'echo one; echo two; exit 1'])  # pylint: disable=protected-access
+    assert lizard_firmware.progress == 'Flashing failed: two'
 
 
 async def test_stream_strips_colour_codes(lizard_firmware: LizardFirmware) -> None:
