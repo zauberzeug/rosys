@@ -165,6 +165,7 @@ class RobotBrain:
                 .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'p0_description', backward=lambda x: f'P0: {x}')
+        ui.label().bind_text_from(self.lizard_firmware, 'progress')
 
         def update_visibility() -> None:
             online_update_button.visible = \
