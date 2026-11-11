@@ -73,13 +73,22 @@ def test_is_version_supported(lizard_firmware: LizardFirmware,
     assert lizard_firmware.is_version_supported(project, version) == expected
 
 
-async def test_other_project_refused(lizard_firmware: LizardFirmware, notifications: list[str]) -> None:
-    """A Core running a firmware project the Robot Brain does not list is reported as unsupported."""
+def test_listed_project_supported(lizard_firmware: LizardFirmware) -> None:
+    """Each listed project is checked against its own specifier."""
+    lizard_firmware.supported_versions = {'lizard': SpecifierSet('<0.14.0'), 'lizard-zz': SpecifierSet('>=0.2.0')}
+    assert lizard_firmware.is_version_supported('lizard-zz', '0.2.0')
+    assert not lizard_firmware.is_version_supported('lizard-zz', '0.1.0')
+
+
+@pytest.mark.parametrize('target', ['core', 'p0'])
+async def test_other_project_refused(lizard_firmware: LizardFirmware, notifications: list[str], target: str) -> None:
+    """A microcontroller running a firmware project the Robot Brain does not list is reported as unsupported."""
     communication = lizard_firmware.robot_brain.communication
     assert isinstance(communication, VersionCommunicationSimulation)
-    communication.core_version = 'lizard-zz v0.2.0'
+    setattr(communication, f'{target}_version', 'lizard-zz v0.2.0')
     await connect(communication)
-    task = background_tasks.create(lizard_firmware.read_core_version(), name='read core version')
+    task = background_tasks.create(getattr(lizard_firmware, f'read_{target}_version')(),
+                                   name=f'read {target} version')
     await forward(seconds=3.0)
     assert task.done()
     assert any('lizard-zz 0.2.0 is not supported' in message and 'requires lizard <0.14.0' in message
@@ -119,19 +128,20 @@ async def test_download_refusal(lizard_firmware: LizardFirmware, notifications: 
 
 
 @pytest.mark.parametrize('target, attr', [('core', 'local_version'), ('p0', 'core_version')])
-@pytest.mark.parametrize('version, expected_message', [
-    (None, 'version is unknown'),
-    ('0.14.0', 'not supported'),
-    ('0.13.0', 'not ready'),
+@pytest.mark.parametrize('project, version, expected_message', [
+    (None, None, 'version is unknown'),
+    ('lizard', '0.14.0', 'not supported'),
+    ('lizard-zz', '0.13.0', 'not supported'),
+    ('lizard', '0.13.0', 'not ready'),
 ])
 async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications: list[str],
-                                  monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-                                  target: str, attr: str, version: str | None, expected_message: str) -> None:
-    """The version gate refuses unknown and unsupported versions; supported ones proceed to the readiness check."""
+                                  monkeypatch: pytest.MonkeyPatch, tmp_path: Path, target: str, attr: str,
+                                  project: str | None, version: str | None, expected_message: str) -> None:
+    """The version gate refuses unknown and unsupported firmware; supported firmware proceeds to the readiness check."""
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     if version is not None:
         setattr(lizard_firmware, attr, version)
-        setattr(lizard_firmware, attr.replace('_version', '_project'), 'lizard')
+        setattr(lizard_firmware, attr.replace('_version', '_project'), project)
     await getattr(lizard_firmware, f'flash_{target}')()
     assert any(expected_message in message for message in notifications)
 
