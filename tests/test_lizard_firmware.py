@@ -1,3 +1,4 @@
+import asyncio
 import re
 from collections.abc import Generator
 from pathlib import Path
@@ -191,6 +192,20 @@ async def test_stream_reports_progress_and_exit_code(lizard_firmware: LizardFirm
     else:
         await stream
     assert lizard_firmware.progress == expected_progress
+
+
+async def test_stream_terminates_script_on_cancellation(lizard_firmware: LizardFirmware, tmp_path: Path) -> None:
+    """Cancelling the stream ends the script before the cancellation propagates."""
+    marker = tmp_path / 'marker'
+    script = f'echo started; sleep 0.3; touch {marker}'
+    task = asyncio.create_task(lizard_firmware._stream(['sh', '-c', script]))  # pylint: disable=protected-access
+    while lizard_firmware.progress != 'started':
+        await asyncio.sleep(0.01)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    await asyncio.sleep(0.6)
+    assert not marker.exists()
 
 
 @pytest.mark.parametrize('target', ['core', 'p0'])

@@ -284,12 +284,17 @@ class LizardFirmware:
                                                        stderr=asyncio.subprocess.STDOUT)
         assert process.stdout is not None
         lines = []
-        async for raw in process.stdout:
-            line = raw.decode(errors='replace').rstrip()
-            lines.append(line)
-            if line:
-                self.progress = line
-        await process.wait()
+        try:
+            async for raw in process.stdout:
+                line = raw.decode(errors='replace').rstrip()
+                lines.append(line)
+                if line:
+                    self.progress = line
+            await process.wait()
+        finally:
+            if process.returncode is None:
+                process.terminate()
+                await process.wait()
         self.log.info('%s (exit %s):\n%s', ' '.join(command), process.returncode, '\n'.join(lines))
         if process.returncode != 0:
             self._fail(f'Flashing failed: {self.progress}')
