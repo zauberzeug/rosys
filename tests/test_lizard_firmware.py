@@ -164,6 +164,19 @@ async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardF
         await lizard_firmware.flash_p0()
 
 
+async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFirmware) -> None:
+    """A P0 that does not answer the strapping pin query fails the flash with a ``FirmwareFlashError``."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    await connect(communication)
+    lizard_firmware.core_version = '0.13.0'
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(seconds=3.0)
+    assert isinstance(task.exception(), FirmwareFlashError)
+    assert str(task.exception()) == 'Flashing P0 failed. P0 does not answer.'
+    assert lizard_firmware.progress == 'Flashing P0 failed. P0 does not answer.'
+
+
 @pytest.mark.parametrize('script, expected_progress', [
     ('echo one; echo two', 'two'),
     ('echo one; echo two; exit 1', 'Flashing failed: two'),
