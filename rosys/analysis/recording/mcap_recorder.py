@@ -14,6 +14,7 @@ from mcap.writer import CompressionType, Writer
 from nicegui import Event, ui
 
 from ... import rosys
+from .budget import StoredRecording, select_deletions
 from .indexing import is_indexed, reindex
 from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
 from .naming import TIMESTAMP_FORMAT, ensure_plain_file_name
@@ -105,6 +106,11 @@ class McapRecorder:
     frees during one only returns when the merge finishes, and the peak then also carries
     the merge's size.
 
+    The budget spares kept recordings named in :attr:`protected` (e.g. not uploaded yet) unless they
+    alone exceed it; then it deletes them too and emits :attr:`PROTECTED_RECORDING_DELETED`. They count
+    toward ``max_kept_size_mb`` without ever being deleted by it, so protecting more than that bound
+    silently deletes every other kept recording but the newest: keep protection well below it.
+
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
     and file I/O never block the loop. Encoding runs on the writer too: sources enqueue the
@@ -156,7 +162,7 @@ class McapRecorder:
             recordings are deleted before a part is opened to stay under it, oldest first. Peak disk usage
             is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
         :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
-            deleted, sparing the newest (the one just filed away) however large it is.
+            deleted, sparing the newest (the one just filed away) however large it is and every protected one.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
             less often).
         :param flush_interval: seconds between background flushes of the queue to disk.
@@ -186,6 +192,11 @@ class McapRecorder:
         """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
         self.RECORDING_STOPPED = Event[Path]()
         """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
+        self.PROTECTED_RECORDING_DELETED = Event[Path]()
+        """the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)"""
+
+        self.protected: frozenset[str] = frozenset()
+        """names of kept recordings the disk budget spares; replace it whole, the writer thread reads it"""
 
         self._declared_topics: set[str] = set()
         self._selected_topics: set[str] | None = None
@@ -819,30 +830,26 @@ class McapRecorder:
     def _enforce_disk_budget(self) -> None:
         """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
 
-        The kept bound spares the newest kept recording; the total is then met oldest first across both folders.
+        See :func:`.budget.select_deletions`.
         """
-        parts: list[tuple[Path, int, float]] = []
-        kept: list[tuple[Path, int, float]] = []
+        protected = self.protected
+        recordings: list[StoredRecording] = []
         for path in self._recording_files():
             try:
                 stat = path.stat()
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
-            (parts if path.parent == self.parts_dir else kept).append((path, stat.st_size, stat.st_mtime))
-        kept.sort(key=lambda item: item[2])
-        deleted: list[tuple[Path, int, float]] = []
-        kept_size = sum(size for _, size, _ in kept)
-        while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
-            deleted.append(kept.pop(0))
-            kept_size -= deleted[-1][1]
-        remaining = sorted(parts + kept, key=lambda item: item[2])
-        total = sum(size for _, size, _ in remaining)
-        while total > self.max_total_size and remaining:
-            deleted.append(remaining.pop(0))
-            total -= deleted[-1][1]
-        for path, size, _ in deleted:
-            path.unlink(missing_ok=True)
-            self.log.info('deleted old recording: %s (freed %.1f MB)', path.name, size / 1_048_576)
+            kept = path.parent == self.output_dir
+            recordings.append(StoredRecording(path, stat.st_size, stat.st_mtime, kept, kept and path.name in protected))
+        deletions = select_deletions(recordings, max_kept_size=self.max_kept_size, max_total_size=self.max_total_size)
+        for recording in deletions.unprotected:
+            recording.path.unlink(missing_ok=True)
+            self.log.info('deleted old recording: %s (freed %.1f MB)', recording.path.name, recording.size / 1_048_576)
+        for recording in deletions.protected:
+            recording.path.unlink(missing_ok=True)
+            self.log.warning('deleted protected recording %s to stay within the disk budget (freed %.1f MB)',
+                             recording.path.name, recording.size / 1_048_576)
+            self._emit_on_loop(self.PROTECTED_RECORDING_DELETED.emit, recording.path)
 
     def _remove_orphaned_temporary_files(self) -> None:
         """Remove reindex and merge temp files left by a crash. Run once at construction, never during operation.

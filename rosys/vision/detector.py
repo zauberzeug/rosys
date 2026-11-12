@@ -1,5 +1,6 @@
 import abc
 import logging
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -8,9 +9,11 @@ from uuid import uuid4
 
 from nicegui import Event
 
+from ..geometry import Polygon
 from .annotations import Annotations
 from .detections import Category, Detections
 from .image import Image
+from .image_masks import ImageMasks
 
 
 class Autoupload(Enum):
@@ -49,6 +52,15 @@ class ImageTransmissionFormat(Enum):
 
 class DetectorException(Exception):
     """An exception that is raised by a detector."""
+
+
+@dataclass(slots=True, kw_only=True)
+class BatchImageMetadata:
+    """Metadata of one image in ``Detector.batch_detect``; its camera is always the image's own ``camera_id``."""
+
+    tags: list[str] = field(default_factory=list)
+    source: str | None = None
+    creation_date: datetime | str | None = None
 
 
 @dataclass(slots=True, kw_only=True)
@@ -106,10 +118,16 @@ class Detector(abc.ABC):
 
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
     like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
+
+    With ``masks`` image regions can be grayed out per camera id, given as polygons in normalized image coordinates
+    (x and y from 0 to 1, origin in the top-left corner, y pointing down).
+    Pixels inside these polygons are replaced by gray before they reach the detector;
+    this applies to detection and upload alike, while the images themselves stay untouched.
     """
 
-    def __init__(self, *, name: str | None = None) -> None:
+    def __init__(self, *, name: str | None = None, masks: Mapping[str, Iterable[Polygon]] | None = None) -> None:
         self.name = name or str(uuid4())
+        self.masks = ImageMasks(masks)
 
         self.NEW_DETECTIONS = Event[Image]()
         """detection on an image is completed (argument: image)"""
@@ -147,10 +165,16 @@ class Detector(abc.ABC):
                            tags: list[str] | None = None,
                            source: str | None = None,
                            creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None,
                            ) -> list[Detections] | None:
         """Runs detections on all images and fills each ``image.detections`` property.
 
-        Result order matches ``images``.
+        Result order matches ``images``, and so must ``image_metadata``.
+
+        :param tags: tags of every image; an image's own tags are added
+        :param source: source of every image, unless the image sets its own
+        :param creation_date: creation date of every image, unless the image sets its own
+        :param image_metadata: one entry per image, see ``BatchImageMetadata``
         """
 
     @abc.abstractmethod
