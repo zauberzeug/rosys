@@ -519,8 +519,8 @@ class McapRecorder:
 
         The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
         the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
-        via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, which refuses
-        work once the app is stopping (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
+        via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, whose pool can
+        refuse work around the shutdown (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
         never blocks the event loop; ``start()`` is refused meanwhile. A final part without
         messages is discarded, otherwise ``RECORDING_STOPPED`` is emitted with its path.
         """

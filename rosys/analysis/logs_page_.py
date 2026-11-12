@@ -68,7 +68,7 @@ async def _find_log_files(logs_dir: Path) -> list[_LogFile]:
                 continue
             logs.append(_LogFile(path=path, mtime=stat.st_mtime, size=stat.st_size))
         return sorted(logs, key=lambda log: log.mtime, reverse=True)
-    return await run.io_bound(scan) or []
+    return await run.io_bound(scan)
 
 
 def _file_info(log: _LogFile) -> str:

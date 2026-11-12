@@ -187,7 +187,7 @@ class RecordingsPage:
             await reload()
 
         async def reload() -> None:
-            infos[:] = await rosys.run.io_bound(recorder.scan_recordings) or []  # None on shutdown
+            infos[:] = await rosys.run.io_bound(recorder.scan_recordings)
             recordings_list.refresh()
 
         async def _delete(path: Path) -> None:
