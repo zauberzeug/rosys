@@ -4,10 +4,11 @@ from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable, Mapping
 from itertools import pairwise
 
-from nicegui import Event, ui
+from nicegui import Event, background_tasks, ui
 
 from .. import rosys
 from .communication import Communication
+from .core_telemetry import CoreTelemetry
 from .esp_pins import EspPins
 from .lizard_firmware import FirmwareFlashError, LizardFirmware
 
@@ -40,7 +41,8 @@ class RobotBrain:
                  enable_esp_on_startup: bool = True,
                  use_espresso: bool = False,
                  heartbeat_interval: float | None = None,
-                 supported_lizard_versions: Mapping[str, str] | None = None) -> None:
+                 supported_lizard_versions: Mapping[str, str] | None = None,
+                 telemetry_frames: bool = False) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -51,6 +53,8 @@ class RobotBrain:
         :param supported_lizard_versions: PEP 440 version specifier per firmware project restricting what can be
             downloaded and flashed, e.g. ``{'lizard': '<0.14.0'}``; a project not listed is refused
             (default: ``None``, every project and version is supported)
+        :param telemetry_frames: Whether the core sends its telemetry as binary frames instead of the ``core.output``
+            text line (default: ``False``); needs a Lizard with ``core.telemetry`` (0.16.0 or later)
         :raises InvalidSpecifier: When a specifier is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
@@ -66,6 +70,9 @@ class RobotBrain:
 
         self.communication = communication
         self.lizard_code = ''
+        self.telemetry_frames = telemetry_frames
+        self.core_telemetry = CoreTelemetry(self._request_telemetry_layouts)
+        """Turns the core's telemetry frames into its text line and notices those of an outdated startup script."""
         self.lizard_firmware = LizardFirmware(self, supported_versions=supported_lizard_versions)
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
@@ -312,6 +319,7 @@ class RobotBrain:
             line = check(unchecked)
             if not line:
                 break
+            line = self.core_telemetry.translate(line)
             words = line.split()
             if not words:
                 continue
@@ -340,6 +348,10 @@ class RobotBrain:
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
+
+    def _request_telemetry_layouts(self) -> None:
+        # forced: without the layouts no core message arrives, so the brain cannot become ready
+        background_tasks.create(self.send('core.telemetry_info()', force=True), name='core.telemetry_info')
 
     async def _check_lizard_code(self) -> None:
         if not self.lizard_code:
