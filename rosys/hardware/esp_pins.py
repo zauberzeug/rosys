@@ -56,7 +56,9 @@ class EspPins:
                                                    timeout=1.0)
         else:
             ack = f'GPIO_Status[{pin.gpio}]|' if self.name == 'core' else f'{self.name}:'
-            line = await self.robot_brain.send_and_await(f'{self.name}.get_pin_status({pin.gpio})', ack, timeout=1.0)
+            # a console query Lizard answers even when the startup script failed and the core never got ready
+            line = await self.robot_brain.send_and_await(f'{self.name}.get_pin_status({pin.gpio})', ack,
+                                                         timeout=1.0, force=True)
         if line is None:
             raise TimeoutError(f'No response from {self.name} for pin {pin.gpio}')
 

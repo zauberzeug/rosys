@@ -11,6 +11,7 @@ from rosys.hardware import (
     BmsHardware,
     ExpanderBusHardware,
     ExpanderHardware,
+    FirmwareFlashError,
     RobotBrain,
     RobotHardware,
     SerialHardware,
@@ -398,8 +399,10 @@ async def test_flash_copies_the_firmware_and_configures_the_expander(robot: Robo
 
 async def test_flash_needs_the_core_startup_with_the_expander_bus(robot: Robot) -> None:
     robot.core.core_checksum = 'beef'  # NOTE: e.g. the core still runs an expander
-    await run(robot.brain.lizard_firmware.flash_p0())
+    with pytest.raises(FirmwareFlashError, match='serial bus'):
+        await run(robot.brain.lizard_firmware.flash_p0())
     assert FLASH not in robot.core.sent
+    assert 'configure the core with its expander bus first' in robot.notifications[-1]
 
 
 async def test_mirror_warnings_notify_only_outside_flash_and_configure(robot: Robot) -> None:
