@@ -6,17 +6,24 @@ from typing import Any
 import numpy as np
 import pytest
 
+from rosys import run
+from rosys.geometry import Point, Point3d, Polygon
+from rosys.testing import forward
 from rosys.vision import (
     BatchImageMetadata,
+    CalibratableCamera,
     Detector,
     DetectorHardware,
     DetectorSimulation,
     Image,
+    ImageMasks,
     ImageState,
     ImageTransmissionFormat,
     SimulatedCameraProvider,
+    SimulatedObject,
 )
-from rosys.vision.image_processing import decode_jpeg_image
+from rosys.vision.detector import DetectorException
+from rosys.vision.image_processing import decode_jpeg_image, encode_image_as_jpeg
 
 Payloads = dict[str, dict[str, Any]]
 
@@ -49,6 +56,13 @@ def detector(make_detector: Callable[..., DetectorHardware]) -> DetectorHardware
 
 def _image(camera_id: str = 'cam') -> Image:
     return Image.from_array(np.zeros((2, 2, 3), dtype=np.uint8), camera_id=camera_id)
+
+
+LEFT_HALF = Polygon(outline=[Point(x=0, y=0), Point(x=0.5, y=0), Point(x=0.5, y=1), Point(x=0, y=1)])
+
+
+def _camera_image(camera_id: str = 'cam') -> Image:
+    return Image.from_array(np.random.randint(1, 255, (4, 8, 3), dtype=np.uint8), camera_id=camera_id)
 
 
 @pytest.mark.parametrize('creation_date, expected', [
@@ -137,3 +151,102 @@ async def test_batch_detect_rejects_image_metadata_that_does_not_match_the_image
 def test_an_invalid_jpeg_quality_is_rejected_when_the_detector_is_created():
     with pytest.raises(ValueError):
         DetectorHardware(port=1234, jpeg_quality=0)
+
+
+async def test_masked_cameras_send_the_masked_pixels_and_keep_the_image_untouched(
+        make_detector: Callable[..., DetectorHardware], payloads: Payloads):
+    detector = make_detector(masks={'cam': [LEFT_HALF]})
+    image = _camera_image()
+    original = image.array.copy()
+    await detector.detect(image, lazy=False)
+    await detector.batch_detect([image])
+    await detector.upload(image)
+    expected = detector.masks.apply(image)
+    assert np.all(expected[:, :5] == ImageMasks.FILL_VALUE)
+    for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
+        assert sent['bytes'] == expected.tobytes()
+        assert sent['dtype'] == 'uint8'
+        assert sent['shape'] == (4, 8, 3)
+    assert np.array_equal(image.array, original)
+
+
+async def test_masked_cameras_are_encoded_as_jpeg_after_masking(make_detector: Callable[..., DetectorHardware],
+                                                                payloads: Payloads):
+    detector = make_detector(image_transmission_format=ImageTransmissionFormat.JPEG, masks={'cam': [LEFT_HALF]})
+    image = _camera_image()
+    await detector.detect(image, lazy=False)
+    await detector.batch_detect([image])
+    await detector.upload(image)
+    expected = encode_image_as_jpeg(detector.masks.apply(image), detector.jpeg_quality)
+    for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
+        assert sent['format'] == 'jpeg'
+        assert sent['bytes'] == expected
+
+
+async def test_cameras_without_masks_are_sent_unchanged(make_detector: Callable[..., DetectorHardware],
+                                                        payloads: Payloads):
+    detector = make_detector(masks={'cam': [LEFT_HALF]})
+    image = _camera_image('other')
+    await detector.detect(image, lazy=False)
+    assert payloads['detect']['image']['bytes'] == image.array.tobytes()
+
+
+async def test_masks_can_be_set_after_creation(make_detector: Callable[..., DetectorHardware], payloads: Payloads):
+    detector = make_detector()
+    detector.masks.set('cam', [LEFT_HALF])
+    image = _camera_image()
+    await detector.detect(image, lazy=False)
+    assert payloads['detect']['image']['bytes'] == detector.masks.apply(image).tobytes()
+
+
+async def test_masking_interrupted_by_shutdown_raises_detector_exception(make_detector: Callable[..., DetectorHardware],
+                                                                         monkeypatch: pytest.MonkeyPatch):
+    async def interrupted(*_: Any, **__: Any) -> None:
+        return None
+    monkeypatch.setattr(run, 'io_bound', interrupted)
+    detector = make_detector(masks={'cam': [LEFT_HALF]})
+    with pytest.raises(DetectorException, match='Upload failed'):
+        await detector.upload(_camera_image())
+    with pytest.raises(DetectorException, match='Detection failed'):
+        await detector.detect(_camera_image(), lazy=False)
+
+
+class _Cameras:
+
+    def __init__(self, camera: CalibratableCamera) -> None:
+        self.cameras = {camera.id: camera}
+
+
+async def test_the_simulation_does_not_detect_objects_inside_the_masks(rosys_integration):
+    camera = CalibratableCamera.create_calibrated(id='cam', width=800, height=600, connect_after_init=False)
+    detector = DetectorSimulation(_Cameras(camera), noise=0, masks={'cam': [LEFT_HALF]})
+    detector.simulated_objects = [SimulatedObject(category_name='obj', position=Point3d(x=x, y=0, z=0))
+                                  for x in (-0.3, 0.3)]
+    image = Image.from_array(np.zeros((600, 800, 3), dtype=np.uint8), camera_id='cam')
+
+    task = asyncio.create_task(detector.detect(image))
+    await forward(1.0)
+    detections = await task
+
+    assert detections is not None
+    assert len(detections.points) == 1
+    assert detections.points[0].x > 400
+
+
+@pytest.mark.parametrize('pixel_x, detected', [(399.25, False), (399.75, True)])
+async def test_the_simulation_places_the_mask_outline_like_the_masked_image(rosys_integration,
+                                                                            pixel_x: float, detected: bool):
+    camera = CalibratableCamera.create_calibrated(id='cam', width=800, height=600, connect_after_init=False)
+    assert camera.calibration is not None
+    position = camera.calibration.project_from_image(Point(x=pixel_x, y=300))
+    assert position is not None
+    detector = DetectorSimulation(_Cameras(camera), noise=0, masks={'cam': [LEFT_HALF]})  # outline at pixel x = 399.5
+    detector.simulated_objects = [SimulatedObject(category_name='obj', position=position)]
+    image = Image.from_array(np.zeros((600, 800, 3), dtype=np.uint8), camera_id='cam')
+
+    task = asyncio.create_task(detector.detect(image))
+    await forward(1.0)
+    detections = await task
+
+    assert detections is not None
+    assert len(detections.points) == (1 if detected else 0)
