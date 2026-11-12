@@ -7,6 +7,7 @@ from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
 from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
+from .expander_bus import ExpanderBusHardware
 from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuMeasurement, ImuSimulation
 from .lizard_firmware import FirmwareFlashError
@@ -35,6 +36,7 @@ __all__ = [
     'EStopHardware',
     'EStopSimulation',
     'EspNotReadyException',
+    'ExpanderBusHardware',
     'ExpanderHardware',
     'FirmwareFlashError',
     'Gnss',

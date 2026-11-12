@@ -15,6 +15,7 @@ from ..run import awaitable
 from .communication import SerialCommunication
 
 if TYPE_CHECKING:
+    from rosys.hardware.expander_bus import ExpanderBusHardware
     from rosys.hardware.robot_brain import RobotBrain
 
 # NOTE: the flash scripts and esptool block-buffer their output when stdout is a pipe
@@ -57,6 +58,9 @@ class LizardFirmware:
 
         self.local_checksum: str | None = None
         self.core_checksum: str | None = None
+
+        self.expander_bus: ExpanderBusHardware | None = None
+        """P0's expander bus, which an ``ExpanderBusHardware`` sets; ``None`` while P0 is an expander."""
 
         self.progress = ''
         """The last line the running flash reported, for status pages."""
@@ -158,7 +162,11 @@ class LizardFirmware:
             return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
-            if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
+            if self.expander_bus is not None:
+                response = await self.expander_bus.request('core.version()', 'version:', timeout=1)
+            else:
+                response = await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1)
+            if response:
                 self.p0_project, self.p0_version = self._parse_version_line(response)
                 self._warn_version(self.p0_project, self.p0_version, 'P0')
                 return
@@ -263,6 +271,16 @@ class LizardFirmware:
             self._fail(reason)
         if not self.robot_brain.is_ready:
             self._fail('Flashing P0 failed. Robot Brain is not ready.')
+        if self.expander_bus is not None:
+            # NOTE: an expander bus checks no strapping pins; an expander that does not enter its bootloader fails
+            # the transfer before anything is erased
+            self.progress = 'waiting for the Core to replicate its firmware to the P0'
+            if not await self.expander_bus.flash(timeout=timeout):
+                self._fail('Flashing P0 over its serial bus failed.')  # NOTE: the bus has notified the reason
+            await self.read_p0_version()
+            self.progress = 'Finished.'
+            rosys.notify('Finished.', 'positive')
+            return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
         # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)

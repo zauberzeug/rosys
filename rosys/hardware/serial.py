@@ -13,5 +13,6 @@ class SerialHardware(ModuleHardware):
                  num: int = 1) -> None:
 
         self.name = name
+        self.baud = baud
         lizard_code = f'{name} = Serial({rx_pin}, {tx_pin}, {baud}, {num})'
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)

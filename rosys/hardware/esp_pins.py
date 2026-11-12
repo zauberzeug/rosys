@@ -8,6 +8,7 @@ from nicegui import ui
 from nicegui.elements.mixins.value_element import ValueElement
 
 if TYPE_CHECKING:
+    from .expander_bus import ExpanderBusHardware
     from .robot_brain import RobotBrain
 
 
@@ -46,12 +47,18 @@ class EspPins:
                                    21, 22, 23, 25, 26, 27,
                                    32, 33, 34, 35, 36, 37, 38, 39]
         self._pins: dict[int, GpioPin] = {pin: GpioPin(gpio=pin) for pin in _pin_numbers}
+        self.expander_bus: ExpanderBusHardware | None = None
+        """The expander bus to this ESP, which an ``ExpanderBusHardware`` sets; its pins go over the bus then."""
 
     async def update_pin(self, pin: GpioPin) -> None:
-        ack = f'GPIO_Status[{pin.gpio}]|' if self.name == 'core' else f'{self.name}:'
-        # a console query Lizard answers even when the startup script failed and the core never got ready
-        line = await self.robot_brain.send_and_await(f'{self.name}.get_pin_status({pin.gpio})', ack,
-                                                     timeout=1.0, force=True)
+        if self.expander_bus is not None:
+            line = await self.expander_bus.request(f'core.get_pin_status({pin.gpio})', f'GPIO_Status[{pin.gpio}]|',
+                                                   timeout=1.0)
+        else:
+            ack = f'GPIO_Status[{pin.gpio}]|' if self.name == 'core' else f'{self.name}:'
+            # a console query Lizard answers even when the startup script failed and the core never got ready
+            line = await self.robot_brain.send_and_await(f'{self.name}.get_pin_status({pin.gpio})', ack,
+                                                         timeout=1.0, force=True)
         if line is None:
             raise TimeoutError(f'No response from {self.name} for pin {pin.gpio}')
 
@@ -80,6 +87,9 @@ class EspPins:
         return self._pins[pin_id].level
 
     async def set_pin_level(self, pin: GpioPin, level: bool) -> None:
+        if self.expander_bus is not None:
+            await self.expander_bus.send(f'core.set_pin_level({pin.gpio}, {1 if level else 0})')
+            return
         await self.robot_brain.send(f'{self.name}.set_pin_level({pin.gpio}, {1 if level else 0})')
 
     async def get_strapping_pins(self, numbers: Sequence[int] = (0, 2, 12)) -> list[bool]:
