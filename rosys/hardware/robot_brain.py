@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable, Mapping
 from itertools import pairwise
 
+import lizard_host as lh
 from nicegui import Event, background_tasks, ui
 
 from .. import rosys
@@ -18,6 +19,8 @@ STARTUP_CHECKSUM_TIMEOUT = 15.0  # seconds to wait for the restarted Core to ans
 LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
 LOOP_PERIOD_HISTORY_LENGTH = 10_000  # bounds the window even if the core timestamps stop advancing
 CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown
+TELEMETRY_RELEASE = (0, 16, 0)  # the Lizard release that brought core.telemetry and core.telemetry_info
+FIRMWARE_VERSION_TIMEOUT = 1.0  # seconds to wait for the Core's answer to core.info()
 
 
 class RobotBrain:
@@ -54,7 +57,8 @@ class RobotBrain:
             downloaded and flashed, e.g. ``{'lizard': '<0.14.0'}``; a project not listed is refused
             (default: ``None``, every project and version is supported)
         :param telemetry_frames: Whether the core sends its telemetry as binary frames instead of the ``core.output``
-            text line (default: ``False``); needs a Lizard with ``core.telemetry`` (0.16.0 or later)
+            text line (default: ``False``); needs a firmware built from Lizard 0.16.0 or later, and ``configure()``
+            refuses a core whose firmware lacks ``core.telemetry``
         :raises InvalidSpecifier: When a specifier is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
@@ -69,6 +73,7 @@ class RobotBrain:
         self.log = logging.getLogger('rosys.robot_brain')
 
         self.communication = communication
+        self._connection = lh.AsyncConnection(communication.send)  # runs lizard-host's procedures on the lines read
         self.lizard_code = ''
         self.telemetry_frames = telemetry_frames
         self.core_telemetry = CoreTelemetry(self._request_telemetry_layouts)
@@ -252,6 +257,10 @@ class RobotBrain:
         :return: whether the script was transferred, persisted and verified
         """
         rosys.notify('Configuring Lizard...')
+        if self.telemetry_frames and (reason := await self._refuse_telemetry_frames()) is not None:
+            # NOTE: nothing was sent yet, so the Core keeps the startup script it runs
+            rosys.notify(f'Configuring Lizard failed: {reason}', 'negative', log_level=logging.ERROR)
+            return False
         self.lizard_firmware.read_local_checksum()
         await self.read_startup_checksum(timeout=1.0, force=True)  # drain any stale checksum: response
         for _ in range(MAX_CONFIGURE_ATTEMPTS):
@@ -319,6 +328,7 @@ class RobotBrain:
             line = check(unchecked)
             if not line:
                 break
+            self._connection.feed(line)
             line = self.core_telemetry.translate(line)
             words = line.split()
             if not words:
@@ -352,6 +362,28 @@ class RobotBrain:
     def _request_telemetry_layouts(self) -> None:
         # forced: without the layouts no core message arrives, so the brain cannot become ready
         background_tasks.create(self.send('core.telemetry_info()', force=True), name='core.telemetry_info')
+
+    async def _refuse_telemetry_frames(self) -> str | None:
+        """Why the Core cannot run a startup script with telemetry frames, or ``None`` if nothing speaks against it.
+
+        A firmware that reports the Lizard version it is built from is judged by that version, whatever its project
+        and the project's own version, e.g. lizard-zz 0.3.0 built from Lizard 0.16.0.
+        A firmware that leaves it open, like a project built from a Lizard before 0.16.0 or a build between two
+        releases, is asked for ``core.telemetry_info()``, which came together with ``core.telemetry``.
+        Without this check such a Core would store the script, fail at ``core.telemetry`` and never send a core message.
+        """
+        version = await self._connection.read_version(timeout=FIRMWARE_VERSION_TIMEOUT)
+        try:
+            lh.check_script(self.lizard_code, version)
+        except lh.UnsupportedFirmware as e:
+            return str(e)
+        if version is not None and version.supports(TELEMETRY_RELEASE) == 'yes':
+            return None
+        answer = await self.send_and_await('core.telemetry_info()', 'error', timeout=1.0, force=True)
+        if answer and 'unknown method "core.telemetry_info"' in answer:
+            return ('The startup script uses telemetry frames (core.telemetry), which need Lizard v0.16.0 or newer, '
+                    'but the firmware does not know them.')
+        return None
 
     async def _check_lizard_code(self) -> None:
         if not self.lizard_code:

@@ -5,10 +5,15 @@ import struct
 from collections.abc import Sequence
 
 import pytest
-from test_robot_brain import MISMATCH_MESSAGE, CommunicationSimulation  # pylint: disable=wrong-import-order
+from nicegui import background_tasks
+from test_robot_brain import (  # pylint: disable=wrong-import-order
+    MISMATCH_MESSAGE,
+    CommunicationSimulation,
+    matching_checksum,
+)
 
 import rosys
-from rosys.hardware import ModuleHardware, RobotBrain, RobotHardware
+from rosys.hardware import ModuleHardware, RobotBrain, RobotHardware, robot_brain
 from rosys.hardware.core_telemetry import LINE_LIMIT, OUTDATED_AFTER_STEPS, CoreTelemetry
 from rosys.testing import forward
 
@@ -274,3 +279,81 @@ async def test_without_telemetry_frames_core_frames_ask_to_configure(rosys_integ
     communication.incoming.extend([*layout_lines(1, _module_fields(2)), frame_line(1, _module_fields(2))])
     await forward(seconds=1.0)
     assert any(MISMATCH_MESSAGE in message for message in notifications)
+
+
+LIZARD_0_15 = ['project name: lizard', 'version: v0.15.1']
+LIZARD_ZZ_ON_0_15 = ['project name: lizard-zz', 'version: v0.2.0']
+LIZARD_ZZ_ON_0_16 = ['project name: lizard-zz', 'project version: v0.3.0+1a2b3c4d', 'lizard version: v0.16.0']
+LIZARD_BEFORE_0_16 = ['project name: lizard', 'version: v0.15.1-40-gea96593']  # a build between two releases
+
+
+class _Core(CommunicationSimulation):
+    """A core that answers ``core.info()``, unless it has none, and rejects ``core.telemetry_info()`` unless it knows
+    telemetry."""
+
+    def __init__(self, info: list[str] | None, *, knows_telemetry: bool) -> None:
+        super().__init__()
+        self.info = [] if info is None else [*info, 'compile time: Nov 13 2026, 17:05:21', 'idf version: v5.3.6']
+        self.knows_telemetry = knows_telemetry
+
+    async def send(self, msg: str) -> None:
+        await super().send(msg)
+        if self.sent[-1] == 'core.info()':
+            self.incoming.extend(self.info)
+        if self.sent[-1] == 'core.telemetry_info()' and not self.knows_telemetry:
+            self.incoming.append('error processing uart0: unknown method "core.telemetry_info"')
+
+
+@pytest.mark.parametrize('info, knows_telemetry, refusal, asked', [
+    (LIZARD_0_15, False, 'needs Lizard v0.16.0 or newer, but the firmware is built from Lizard v0.15.1', False),
+    (LIZARD_ZZ_ON_0_15, False, 'need Lizard v0.16.0 or newer, but the firmware does not know them', True),
+    (LIZARD_ZZ_ON_0_16, True, None, False),
+    (LIZARD_BEFORE_0_16, True, None, True),
+], ids=['Lizard 0.15.1', 'lizard-zz on Lizard 0.15.1', 'lizard-zz on Lizard 0.16.0', 'build before 0.16.0'])
+async def test_configure_refuses_telemetry_frames_on_a_core_that_lacks_them(rosys_integration: None,
+                                                                            info: list[str], knows_telemetry: bool,
+                                                                            refusal: str | None, asked: bool) -> None:
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = _Core(info, knows_telemetry=knows_telemetry)
+    brain = RobotBrain(communication, enable_esp_on_startup=False, telemetry_frames=True)
+    _robot = RobotHardware([_Module(brain)], brain, rdyp_pin=None, en3_pin=None)  # NOTE: keep alive for its updates
+    communication.startup_checksum = matching_checksum(brain)
+    task = background_tasks.create(brain.configure(), name='configure')
+    await forward(seconds=25.0)
+    assert task.result() == (refusal is None)
+    assert ('core.telemetry_info()' in communication.sent) == asked  # only where the version leaves it open
+    failures = [notification for notification in notifications if 'failed' in notification]
+    if refusal is None:
+        assert not failures
+        assert communication.sent.count('!.') == 1
+    else:
+        assert [refusal in failure for failure in failures] == [True]
+        assert not any(line.startswith('!') for line in communication.sent), 'the core must keep its startup script'
+        assert 'core.restart()' not in communication.sent
+
+
+async def test_configure_goes_on_without_an_answer_to_core_info(rosys_integration: None,
+                                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(robot_brain, 'FIRMWARE_VERSION_TIMEOUT', 0.05)
+    communication = _Core(None, knows_telemetry=True)
+    brain = RobotBrain(communication, enable_esp_on_startup=False, telemetry_frames=True)
+    _robot = RobotHardware([_Module(brain)], brain, rdyp_pin=None, en3_pin=None)  # NOTE: keep alive for its updates
+    communication.startup_checksum = matching_checksum(brain)
+    task = background_tasks.create(brain.configure(), name='configure')
+    await asyncio.sleep(0.1)  # NOTE: lizard-host waits for the answer to core.info() on the event loop's clock
+    await forward(seconds=25.0)
+    assert task.result() is True
+    assert 'core.telemetry_info()' in communication.sent
+
+
+async def test_configure_without_telemetry_frames_does_not_ask_for_the_firmware(rosys_integration: None) -> None:
+    communication = _Core(LIZARD_0_15, knows_telemetry=False)
+    brain = RobotBrain(communication, enable_esp_on_startup=False)
+    _robot = RobotHardware([_Module(brain)], brain, rdyp_pin=None, en3_pin=None)  # NOTE: keep alive for its updates
+    communication.startup_checksum = matching_checksum(brain)
+    task = background_tasks.create(brain.configure(), name='configure')
+    await forward(seconds=25.0)
+    assert task.result() is True
+    assert 'core.info()' not in communication.sent
+    assert 'core.telemetry_info()' not in communication.sent
