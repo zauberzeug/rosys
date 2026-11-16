@@ -9,6 +9,7 @@ import rosys
 from rosys.hardware import (
     BatteryControlHardware,
     BmsHardware,
+    EspNotReadyException,
     ExpanderBusHardware,
     ExpanderHardware,
     FirmwareFlashError,
@@ -86,7 +87,7 @@ class CoreSimulation(Communication):
                 self.p0_saved = list(BOOTSTRAP)
                 self.incoming.append('p0[2]: Ready.')
         elif match := re.fullmatch(r'p0\.send\(2, "(.*)"\)', line):
-            self._run_on_p0(match.group(1).replace('\\"', '"').replace('%%', '%'))
+            self._run_on_p0(match.group(1).replace('\\"', '"').replace('\\\\', '\\').replace('%%', '%'))
         elif match := re.fullmatch(r'(\w+)\(\)', line):
             text, names = self.routines[match.group(1)]
             values = [self.mirrors[name] for name in names]
@@ -337,8 +338,19 @@ async def test_configure_verifies_before_saving_and_after_restarting(robot: Robo
     lines = robot.p0.startup.splitlines()
     assert robot.core.p0_saved == lines
     assert robot.core.p0_commands == ['!-', *(f'!+{line}' for line in lines), 'core.startup_checksum()', '!.',
-                                      'core.startup_checksum()', 'core.restart()', 'core.startup_checksum()']
+                                      'core.restart()', 'core.startup_checksum()']
     assert robot.p0.runs_startup
+    assert robot.notifications[-2:] == ['Configuring p0...', 'p0 configured']
+
+
+async def test_configure_checks_a_long_startup_every_20_lines(robot: Robot) -> None:
+    robot.p0.add_lizard_code('\n'.join(f'int v{index} = 0' for index in range(15)))
+    lines = robot.p0.startup.splitlines()
+    assert len(lines) == 25
+    assert await run(robot.p0.configure())
+    assert robot.core.p0_saved == lines
+    # NOTE: the check waits until the lines have passed the bus's queue to the expander
+    assert robot.core.p0_commands[20:23] == [f'!+{lines[19]}', 'core.startup_checksum()', f'!+{lines[20]}']
 
 
 async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
@@ -346,9 +358,17 @@ async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
     robot.core.p0_drops = {'bms = JbdBms(bms_serial)'}
     assert not await run(robot.p0.configure())
     assert robot.core.p0_saved == ['old = Output(2)']
+    assert robot.core.p0_commands.count('!-') == 3, 'lizard-host writes the script three times before it gives up'
     assert '!.' not in robot.core.p0_commands
-    assert 'core.restart()' in robot.core.p0_commands, 'a restart leaves the edited script for the saved one'
+    assert robot.core.p0_commands[-1] == 'core.restart()', 'a restart leaves the edited script for the saved one'
     assert robot.core.p0_edit == ['old = Output(2)']
+    lost = checksum([line for line in robot.p0.startup.splitlines() if line != 'bms = JbdBms(bms_serial)'])
+    assert (f'Configuring p0 failed: Writing the startup script to p0[2] failed: '
+            f'checksum {lost} instead of {robot.p0.local_checksum}') in robot.notifications
+    assert not robot.p0.runs_startup
+    await forward(seconds=3.0)  # NOTE: the check after the restart
+    assert robot.notifications[-1] == (f'p0 runs startup {checksum(["old = Output(2)"])} instead of '
+                                       f'{robot.p0.local_checksum}; please configure p0')
 
 
 async def test_configure_and_flash_refuse_to_run_twice(robot: Robot) -> None:
@@ -377,6 +397,34 @@ async def test_a_peer_2_of_another_serial_bus_is_not_the_expander(robot: Robot) 
     assert await run(robot.p0.read_checksum()) == robot.p0.local_checksum
     assert lines == ['bus[2]: Ready.', 'bus[2]: checksum: abcd']
     assert robot.p0.runs_startup  # NOTE: the other peer restarted, not the expander
+
+
+async def test_commands_are_wrapped_for_the_bus_and_must_fit_into_a_message(robot: Robot) -> None:
+    await robot.p0.send('core.print("50 %", "a\\b")')
+    assert robot.core.sent[-1] == 'p0.send(2, "core.print(\\"50 %%\\", \\"a\\\\b\\")")'
+    await robot.p0.send('x' * 255)
+    with pytest.raises(ValueError, match='too long for serial bus p0'):
+        await robot.p0.send('x' * 256)
+
+
+async def test_requests_with_the_same_reply_get_their_own_answers(robot: Robot) -> None:
+    first = background_tasks.create(robot.p0.request('core.get_pin_status(15)', 'GPIO_Status['), name='first')
+    second = background_tasks.create(robot.p0.request('core.get_pin_status(13)', 'GPIO_Status['), name='second')
+    await forward(until=lambda: first.done() and second.done())
+    assert first.result().startswith('GPIO_Status[15]|')
+    assert second.result().startswith('GPIO_Status[13]|')
+
+
+async def test_requests_need_a_ready_core_unless_forced(rosys_integration: None) -> None:
+    core = CoreSimulation()
+    _, p0, *_ = build(core)
+    with pytest.raises(EspNotReadyException):
+        await p0.request('core.version()', 'version:')
+    with pytest.raises(EspNotReadyException):
+        await p0.send('core.restart()')
+    assert core.sent == []
+    await p0.send('core.restart()', force=True)
+    assert core.p0_commands == ['core.restart()']
 
 
 async def test_a_failed_request_leaves_no_reply_behind(robot: Robot) -> None:
@@ -444,8 +492,10 @@ async def test_the_expander_refuses_what_its_startup_or_frames_cannot_carry(rosy
     assert p0.add_lizard_code('a = Input(4)', [('a.level', 'int')]) == 'int p0_values.a.level = 0'
     with pytest.raises(ValueError, match='mirrored already'):
         p0.add_lizard_code('', [('a.level', 'int')], interval=1.0)
-    with pytest.raises(ValueError, match='exceeds a bus message'):
+    with pytest.raises(ValueError, match='too long for serial bus p0'):
         p0.add_lizard_code('x = "' + 'y' * 250 + '"')
+    with pytest.raises(ValueError, match='too long for serial bus p0'):  # NOTE: the telemetry line of the interval
+        p0.add_lizard_code('', [(f'module_{index}.a_long_property_name', 'float') for index in range(9)], interval=2.0)
     p0.add_lizard_code('', [(f'f{index}', 'float') for index in range(46)], interval=0.5)  # two frames since Lizard 0.16
     for index in range(5):
         p0.add_lizard_code('', [(f'g{index}', 'bool')], interval=index + 1)

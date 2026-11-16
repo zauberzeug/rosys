@@ -4,11 +4,12 @@ from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
 
+import lizard_host as lh
 from nicegui import background_tasks, ui
 
 from .. import rosys
 from .module import ModuleHardware
-from .robot_brain import RobotBrain
+from .robot_brain import EspNotReadyException, RobotBrain
 from .serial import SerialHardware
 
 FieldType = Literal['bool', 'int', 'float']
@@ -20,8 +21,6 @@ PEER_ID = 2
 CONSOLE_RX_PIN = 3
 CONSOLE_TX_PIN = 1
 """The console pins of the expander (an ESP32), which its bus link takes over."""
-PAYLOAD_LIMIT = 255
-"""Bytes of a message to the expander; Lizard's ``SerialBus`` refuses 256 and more."""
 FRAME_PAYLOAD = 180
 """Bytes of values in one telemetry frame (Lizard's ``telemetry::MAX_PAYLOAD``)."""
 MAX_FRAMES = 8
@@ -32,8 +31,6 @@ READY_TIMEOUT = 10.0
 """Seconds until a restarted expander answers the core's poll with ``Ready.``."""
 STARTUP_TIMEOUT = 10.0
 """Seconds a command waits for the expander to run its startup script."""
-LINE_INTERVAL = 0.05
-"""Seconds between the startup lines that ``configure()`` writes, so that they do not fill the bus's queue to the expander."""
 
 
 class ExpanderBusHardware(ModuleHardware):
@@ -45,6 +42,8 @@ class ExpanderBusHardware(ModuleHardware):
     e.g. ``p0_values.button.level``.
     Lines of the expander arrive as ``p0[2]: ...``, with the name of the bus and the expander's node;
     commands go to the expander with ``send``.
+    Commands, requests and the startup script travel with ``lizard-host``, the host library of Lizard,
+    on the connection of the ``RobotBrain``; its requests wait on the event loop's clock, not on ``rosys.time()``.
 
     ``configure()`` writes the expander's startup script over the bus;
     ``flash()`` copies the core's firmware onto the expander through its boot and enable pins with ``flash_peer``
@@ -67,6 +66,8 @@ class ExpanderBusHardware(ModuleHardware):
         self.serial = serial
         self.boot = boot
         self.enable = enable
+        self.target = lh.Target.peer(name, PEER_ID)
+        """The expander for ``lizard-host``, which wraps its commands for the bus and knows the prefix of its lines."""
         lizard_code = '\n'.join([
             f'{self.boot_name} = Output({boot})',
             f'{self.boot_name}.on()',  # NOTE: before EN, so that the expander starts its firmware, not its bootloader
@@ -85,7 +86,6 @@ class ExpanderBusHardware(ModuleHardware):
         self._startup_failed = False
         self._code: list[str] = []
         self._frames: dict[int, dict[str, FieldType]] = {}
-        self._replies: dict[str, str | None] = {}
         self._reply_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._ready_count = 0
         self._flashing = False
@@ -98,7 +98,7 @@ class ExpanderBusHardware(ModuleHardware):
     @property
     def line_prefix(self) -> str:
         """The core prints the expander's lines as ``p0[2]: <line>``, unlike ``bus[2]:`` of a peer 2 of another bus."""
-        return f'{self.name}[{PEER_ID}]:'
+        return self.target.prefix.strip()
 
     @property
     def boot_name(self) -> str:
@@ -131,23 +131,20 @@ class ExpanderBusHardware(ModuleHardware):
             or the fields exceed the expander's telemetry frames
         """
         lines = code.strip('\n').splitlines()
-        for line in lines:
-            if len(f'!+{line}'.encode()) > PAYLOAD_LIMIT:
-                raise ValueError(f'a startup line of {self.name} exceeds a bus message: {line[:60]}...')
         frames = {interval_ms: dict(frame) for interval_ms, frame in self._frames.items()}
         for field, type_ in fields:
             if any(field in frame for frame in frames.values()):
                 raise ValueError(f'{field} of {self.name} is mirrored already')
             frames.setdefault(round(interval * 1000), {})[field] = type_
         slots = 0
-        for interval_ms, frame in frames.items():
+        for frame in frames.values():
             bools = sum(type_ == 'bool' for type_ in frame.values())
             payload = 4 * (len(frame) - bools) + (bools + 7) // 8
             slots += max(1, -(-payload // FRAME_PAYLOAD))  # Lizard splits the fields of an interval into frames
-            if len(f'!+{_telemetry_line(frame, interval_ms)}'.encode()) > PAYLOAD_LIMIT:
-                raise ValueError(f'the telemetry line of {self.name} every {interval_ms} ms exceeds a bus message')
         if slots > MAX_FRAMES:
             raise ValueError(f'{self.name} sends at most {MAX_FRAMES} telemetry frames, these fields need {slots}')
+        for line in [*lines, *(_telemetry_line(frame, interval_ms) for interval_ms, frame in frames.items())]:
+            self.target.command(f'!+{line}')  # NOTE: raises if the line exceeds a bus message
         self._code += lines
         self._frames = frames
         return '\n'.join(f'{type_} {self.mirror(field)} = {"false" if type_ == "bool" else "0"}'
@@ -170,7 +167,7 @@ class ExpanderBusHardware(ModuleHardware):
     @property
     def local_checksum(self) -> str:
         """Checksum of ``startup`` the way the expander's ``core.startup_checksum()`` computes it."""
-        return f'{sum(self.startup.encode()) % 0x10000:04x}'
+        return f'{lh.startup_checksum(self.startup):04x}'
 
     async def send(self, command: str, *, force: bool = False) -> None:
         """Run ``command`` on the expander, with ``<name>.send(2, "<command>")`` on the core.
@@ -178,10 +175,7 @@ class ExpanderBusHardware(ModuleHardware):
         :raises ValueError: if the command exceeds a bus message
         :raises EspNotReadyException: if the core is not ready and ``force`` is ``False``
         """
-        if len(command.encode()) > PAYLOAD_LIMIT:
-            raise ValueError(f'a command for {self.name} exceeds a bus message: {command[:60]}...')
-        escaped = command.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')  # a printf format in a string
-        await self.robot_brain.send(f'{self.name}.send({PEER_ID}, "{escaped}")', force=force)
+        await self.robot_brain.send(self.target.command(command), force=force)
 
     async def send_after_startup(self, command: str, *, timeout: float = STARTUP_TIMEOUT) -> bool:
         """Run ``command`` on the expander once it runs its startup script, which creates what the command uses.
@@ -207,22 +201,19 @@ class ExpanderBusHardware(ModuleHardware):
         Requests with the same ``reply`` are serialized, since replies carry no request ID.
 
         :return: the expander's line without ``p0[2]:``, or ``None`` after the timeout
+        :raises ValueError: if the command exceeds a bus message
+        :raises EspNotReadyException: if the core is not ready and ``force`` is ``False``
         """
+        if not self.robot_brain.is_ready and not force:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         async with self._reply_locks[reply]:
-            self._replies[reply] = None
-            try:
-                await self.send(command, force=force)
-                deadline = rosys.time() + timeout
-                while self._replies[reply] is None and rosys.time() < deadline:
-                    await rosys.sleep(0.1)
-                return self._replies[reply]
-            finally:
-                del self._replies[reply]
+            return await self.robot_brain.connection.request(command, reply, self.target, timeout=timeout)
 
     async def read_checksum(self, *, timeout: float = 3.0) -> str | None:
         """The checksum of the expander's startup script, or ``None`` if it does not answer in time."""
-        line = await self.request('core.startup_checksum()', 'checksum:', timeout=timeout, force=True)
-        return line.split()[-1] if line else None
+        async with self._reply_locks['checksum:']:
+            checksum = await self.robot_brain.connection.read_startup_checksum(self.target, timeout=timeout)
+        return None if checksum is None else f'{checksum:04x}'
 
     async def check_startup(self) -> str | None:
         """Compare the expander's startup script with ``startup`` and update ``runs_startup``.
@@ -268,27 +259,18 @@ class ExpanderBusHardware(ModuleHardware):
         return True
 
     async def _write_startup(self) -> str | None:
-        """Write, save and verify ``startup``, restarting the expander.
+        """Write, save and verify ``startup`` with ``lizard-host``, which restarts the expander.
 
         :return: why the expander does not run ``startup``, or ``None`` if it does
         """
-        await self.send('!-')
-        for line in self.startup.splitlines():
-            await self.send(f'!+{line}')
-            await rosys.sleep(LINE_INTERVAL)
-        checksum = await self.read_checksum() or await self.read_checksum()  # one lost answer must not fail
-        if checksum != self.local_checksum:
-            await self._restart()  # NOTE: reloads the saved script, which the upload replaced in RAM only
-            return f'checksum {checksum} instead of {self.local_checksum}; nothing was saved'
-        await self.send('!.')
-        await self.read_checksum()  # NOTE: the expander answers in order, i.e. after it saved
-        if not await self._restart():
-            return 'no "Ready." after its restart'
-        checksum = await self.read_checksum()
-        if checksum != self.local_checksum:
-            return f'checksum {checksum} instead of {self.local_checksum} after its restart'
+        try:
+            async with self._reply_locks['checksum:']:  # NOTE: the procedure reads checksums, which carry no request ID
+                await self.robot_brain.connection.write_startup(self.startup, self.target,
+                                                                check_version=False, ready_timeout=READY_TIMEOUT)
+        except lh.StartupError as e:
+            return str(e)
         if self._startup_failed:
-            return 'its startup script failed'
+            return 'its startup script failed'  # NOTE: lizard-host compares the stored script, also if it did not run
         return None
 
     async def flash(self, *, timeout: float = FLASH_TIMEOUT) -> bool:
@@ -333,11 +315,6 @@ class ExpanderBusHardware(ModuleHardware):
             self.busy = False
         return await self.configure()
 
-    async def _restart(self) -> bool:
-        ready_count = self._ready_count
-        await self.send('core.restart()')
-        return await self._wait_for_ready(ready_count)
-
     async def _wait_for_ready(self, ready_count: int) -> bool:
         deadline = rosys.time() + READY_TIMEOUT
         while self._ready_count == ready_count and rosys.time() < deadline:
@@ -360,10 +337,6 @@ class ExpanderBusHardware(ModuleHardware):
         if not line.startswith(self.line_prefix):
             return
         payload = line[len(self.line_prefix):].strip()
-        for reply, answer in self._replies.items():
-            if answer is None and payload.startswith(reply):
-                self._replies[reply] = payload
-                return
         if payload == 'Ready.':
             self._ready_count += 1
             self.runs_startup = False
