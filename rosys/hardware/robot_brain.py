@@ -73,7 +73,8 @@ class RobotBrain:
         self.log = logging.getLogger('rosys.robot_brain')
 
         self.communication = communication
-        self._connection = lh.AsyncConnection(communication.send)  # runs lizard-host's procedures on the lines read
+        self.connection = lh.AsyncConnection(communication.send)
+        """Runs the procedures of ``lizard-host`` on the lines read, for the Core and for peers of its serial buses."""
         self.lizard_code = ''
         self.telemetry_frames = telemetry_frames
         self.core_telemetry = CoreTelemetry(self._request_telemetry_layouts)
@@ -328,7 +329,7 @@ class RobotBrain:
             line = check(unchecked)
             if not line:
                 break
-            self._connection.feed(line)
+            self.connection.feed(line)
             line = self.core_telemetry.translate(line)
             words = line.split()
             if not words:
@@ -372,7 +373,7 @@ class RobotBrain:
         releases, is asked for ``core.telemetry_info()``, which came together with ``core.telemetry``.
         Without this check such a Core would store the script, fail at ``core.telemetry`` and never send a core message.
         """
-        version = await self._connection.read_version(timeout=FIRMWARE_VERSION_TIMEOUT)
+        version = await self.connection.read_version(timeout=FIRMWARE_VERSION_TIMEOUT)
         try:
             lh.check_script(self.lizard_code, version)
         except lh.UnsupportedFirmware as e:
