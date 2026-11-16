@@ -76,6 +76,8 @@ class CoreSimulation(Communication):
         """Lines that the expander prints before each answer."""
         self.p0_info = LIZARD_0_16
         self.p0_knows_telemetry = True
+        self.p0_boot_lines = ['Ready.']
+        """Lines that reach the core while the expander restarts."""
         self.peer_2_lines: list[str] = []
         """Lines of a peer 2 of another serial bus on the core that arrive before each answer of the expander."""
 
@@ -123,7 +125,7 @@ class CoreSimulation(Communication):
             self.p0_saved = list(self.p0_edit)
         elif command == 'core.restart()':
             self.p0_edit = list(self.p0_saved)
-            self.incoming.append('p0[2]: Ready.')
+            self.incoming.extend(f'p0[2]: {line}' for line in self.p0_boot_lines)
         elif command == 'core.startup_checksum()':
             self.incoming.append(f'p0[2]: checksum: {checksum(self.p0_edit)}')
         elif command == 'core.version()':
@@ -465,10 +467,44 @@ async def test_configure_and_flash_refuse_to_run_twice(robot: Robot) -> None:
     assert robot.core.p0_commands.count('!-') == 1
 
 
-async def test_a_skipped_startup_is_no_running_startup(robot: Robot) -> None:
-    robot.core.incoming.append('p0[2]: Ready.')
-    robot.core.incoming.append('p0[2]: error: startup skipped after 2 failed boots (panic)')
+SKIPPED = 'error: startup skipped after 2 failed boots (unknown module type "JbdBms")'
+RESTORED = 'restoring serial bus from backup'
+FAILING_BOOTS = [
+    'Ready.',  # NOTE: the bus of the startup script answers before the script fails further down
+    'error while loading startup script: unknown module type "JbdBms"',
+    'restarting (failed boot 1 of 2)',
+    'Ready.',
+    'error while loading startup script: unknown module type "JbdBms"',
+    'restarting (failed boot 2 of 2)',
+    SKIPPED,  # NOTE: printed before the bus of the backup takes over the console, so before its "Ready."
+    RESTORED,
+    'Ready.',
+]
+"""What the core prints for an expander whose startup script fails to load, as Lizard 0.16.0 orders the lines."""
+
+
+@pytest.mark.parametrize('boot_lines', [[SKIPPED, RESTORED, 'Ready.'], ['Ready.', SKIPPED], FAILING_BOOTS],
+                         ids=['skipped before Ready.', 'skipped after Ready.', 'three boots'])
+async def test_a_skipped_startup_is_no_running_startup(robot: Robot, boot_lines: list[str]) -> None:
+    robot.core.incoming.extend(f'p0[2]: {line}' for line in boot_lines)
     await forward(seconds=3.0)  # NOTE: the check after the restart finds the saved script, which did not run
+    assert not robot.p0.runs_startup
+    assert f'p0: {SKIPPED}' in robot.notifications
+    assert robot.notifications[-1] == 'the startup script of p0 failed; please check its errors'
+    await run(robot.battery.release_battery_relay())
+    assert 'battery_control_release()' not in robot.core.p0_commands
+
+    robot.core.incoming.append('p0[2]: Ready.')  # NOTE: e.g. after a power cycle, which resets the boot guard
+    await forward(seconds=3.0)
+    assert robot.p0.runs_startup
+
+
+async def test_configure_notices_a_startup_that_the_expander_skips(robot: Robot) -> None:
+    robot.core.p0_boot_lines = FAILING_BOOTS
+    assert not await run(robot.p0.configure())
+    # NOTE: lizard-host is content with a "Ready." and the checksum of the stored script
+    assert robot.core.p0_saved == robot.p0.startup.splitlines()
+    assert robot.notifications[-1] == 'Configuring p0 failed: its startup script failed'
     assert not robot.p0.runs_startup
     await run(robot.battery.release_battery_relay())
     assert 'battery_control_release()' not in robot.core.p0_commands

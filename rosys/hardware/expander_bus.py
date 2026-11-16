@@ -82,8 +82,9 @@ class ExpanderBusHardware(ModuleHardware):
         self.busy = False
         """Whether the expander is being flashed or configured, so that it may be silent or restart."""
         self.runs_startup = False
-        """Whether the expander reported the checksum of ``startup`` and no startup error since it last restarted."""
+        """Whether the expander reported the checksum of ``startup`` and no startup error for its last boot."""
         self._startup_failed = False
+        self._bus_restored = False
         self._code: list[str] = []
         self._frames: dict[int, dict[str, FieldType]] = {}
         self._reply_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
@@ -341,10 +342,11 @@ class ExpanderBusHardware(ModuleHardware):
         if not line.startswith(self.line_prefix):
             return
         payload = line[len(self.line_prefix):].strip()
+        restored, self._bus_restored = self._bus_restored, payload.startswith('restoring serial bus from backup')
         if payload == 'Ready.':
             self._ready_count += 1
             self.runs_startup = False
-            self._startup_failed = False
+            self._startup_failed = restored  # NOTE: without its startup script the expander restores its bus first
             if not self.busy:
                 self.log.warning('%s restarted', self.name)
                 background_tasks.create(self._check_after_restart(), name=f'{self.name}_check_after_restart')
