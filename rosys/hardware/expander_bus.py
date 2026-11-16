@@ -139,14 +139,15 @@ class ExpanderBusHardware(ModuleHardware):
             if any(field in frame for frame in frames.values()):
                 raise ValueError(f'{field} of {self.name} is mirrored already')
             frames.setdefault(round(interval * 1000), {})[field] = type_
-        if len(frames) > MAX_FRAMES:
-            raise ValueError(f'{self.name} sends at most {MAX_FRAMES} telemetry frames, one per interval')
+        slots = 0
         for interval_ms, frame in frames.items():
             bools = sum(type_ == 'bool' for type_ in frame.values())
-            if 4 * (len(frame) - bools) + (bools + 7) // 8 > FRAME_PAYLOAD:
-                raise ValueError(f'the fields of {self.name} every {interval_ms} ms exceed one telemetry frame')
+            payload = 4 * (len(frame) - bools) + (bools + 7) // 8
+            slots += max(1, -(-payload // FRAME_PAYLOAD))  # Lizard splits the fields of an interval into frames
             if len(f'!+{_telemetry_line(frame, interval_ms)}'.encode()) > PAYLOAD_LIMIT:
                 raise ValueError(f'the telemetry line of {self.name} every {interval_ms} ms exceeds a bus message')
+        if slots > MAX_FRAMES:
+            raise ValueError(f'{self.name} sends at most {MAX_FRAMES} telemetry frames, these fields need {slots}')
         self._code += lines
         self._frames = frames
         return '\n'.join(f'{type_} {self.mirror(field)} = {"false" if type_ == "bool" else "0"}'

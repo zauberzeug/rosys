@@ -446,9 +446,9 @@ async def test_the_expander_refuses_what_its_startup_or_frames_cannot_carry(rosy
         p0.add_lizard_code('', [('a.level', 'int')], interval=1.0)
     with pytest.raises(ValueError, match='exceeds a bus message'):
         p0.add_lizard_code('x = "' + 'y' * 250 + '"')
-    with pytest.raises(ValueError, match='exceed one telemetry frame'):
-        p0.add_lizard_code('', [(f'f{index}', 'float') for index in range(46)])
-    with pytest.raises(ValueError, match='at most 8 telemetry frames'):
-        for index in range(8):
-            p0.add_lizard_code('', [(f'g{index}', 'bool')], interval=index + 1)
+    p0.add_lizard_code('', [(f'f{index}', 'float') for index in range(46)], interval=0.5)  # two frames since Lizard 0.16
+    for index in range(5):
+        p0.add_lizard_code('', [(f'g{index}', 'bool')], interval=index + 1)
+    with pytest.raises(ValueError, match='at most 8 telemetry frames, these fields need 9'):
+        p0.add_lizard_code('', [('g5', 'bool')], interval=6)
     assert p0.startup.splitlines()[2:4] == ['a = Input(4)', 'core.telemetry(a.level, 100)']
