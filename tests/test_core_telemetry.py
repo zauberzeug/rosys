@@ -70,9 +70,9 @@ def test_core_fields_go_into_one_call_once_and_without_their_precision() -> None
     assert code == 'core.telemetry(wheels.linear_speed, wheels.locked, p2t.delta_2.angle_left, p2_ms)\n'
 
 
-def test_core_fields_beyond_a_frame_stay_in_one_call_which_lizard_splits() -> None:
+def test_core_fields_beyond_a_frame_of_values_go_into_several_calls() -> None:
     code = CoreTelemetry(lambda: None).lizard_code([f'module.field_{index}:2' for index in range(100)])
-    assert [len(call) for call in calls(code)] == [100]  # 400 bytes of values, which Lizard sends in three frames
+    assert [len(call) for call in calls(code)] == [45, 45, 10]  # a call of 100 fields would take too much heap to parse
 
 
 def test_core_fields_beyond_a_startup_script_line_go_into_several_calls() -> None:

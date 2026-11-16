@@ -8,6 +8,7 @@ import lizard_host as lh
 from .. import rosys
 
 LINE_LIMIT = 1800  # characters of one core.telemetry(...) line, well within Lizard's console line of 2048 bytes
+FIELDS_PER_CALL = 45  # one frame of 4-byte values; the heap the core needs to parse a call grows with its length
 WARNING_INTERVAL = 30.0  # seconds between two notifications about frames of an outdated startup script
 OUTDATED_AFTER_STEPS = 300  # steps in a row without all fields (3 s of Lizard's 10 ms loop) that count as outdated
 FIELD_NAME = re.compile(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*){0,2}')  # variable, module.property or module.property.sub
@@ -40,8 +41,9 @@ class CoreTelemetry:
     def lizard_code(self, output_fields: list[str]) -> str:
         """Take the given ``core.output`` fields and return the Lizard code that sends them as telemetry frames.
 
-        Lizard splits a call into as many frames as its values need, so the fields only go into several calls
-        where a line of the startup script would get too long.
+        Lizard splits a call into as many frames as its values need, so the calls need not match the frames.
+        Still a call takes at most ``FIELDS_PER_CALL`` fields and ``LINE_LIMIT`` characters:
+        a core that is short of heap at the end of its startup script fails to parse a longer call.
 
         :raises ValueError: if a field is not a property or variable with an optional precision
         """
@@ -50,7 +52,7 @@ class CoreTelemetry:
         names = list(dict.fromkeys(name for name, _ in self._fields)) or ['core.millis']
         calls: list[list[str]] = [[]]
         for name in names:
-            if calls[-1] and len(_code([*calls[-1], name])) > LINE_LIMIT:
+            if calls[-1] and (len(calls[-1]) >= FIELDS_PER_CALL or len(_code([*calls[-1], name])) > LINE_LIMIT):
                 calls.append([])
             calls[-1].append(name)
         self._names = frozenset(names)
