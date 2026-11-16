@@ -164,6 +164,20 @@ def test_a_frame_of_an_outdated_startup_script_is_dropped_with_a_notification(ro
     assert [MISMATCH_MESSAGE in message for message in notifications] == [True]  # once per 30 s
 
 
+def test_layouts_that_are_still_coming_are_not_requested_again(rosys_integration: None) -> None:
+    requests: list[float] = []
+    telemetry = CoreTelemetry(lambda: requests.append(rosys.time()))
+    telemetry.lizard_code(['m.a', 'm.b'])
+    fields = [('m.a', 1), ('m.b', 2)]
+    rosys.set_time(0.0)
+    assert telemetry.translate(frame_line(1, fields)) == ''
+    rosys.set_time(1.9)
+    telemetry.translate(layout_lines(1, fields)[0])  # the first of two layout lines
+    rosys.set_time(2.5)
+    assert telemetry.translate(frame_line(1, fields)) == ''
+    assert requests == [0.0]
+
+
 def test_malformed_telemetry_lines_are_dropped() -> None:
     requests: list[None] = []
     telemetry = CoreTelemetry(lambda: requests.append(None))

@@ -3,13 +3,13 @@ import math
 import re
 from collections.abc import Callable
 
+import lizard_host as lh
+
 from .. import rosys
-from .lizard_telemetry import Frame, TelemetryDecoder, Value
 
 MAX_PAYLOAD = 180  # bytes of values in one frame, Lizard's telemetry::MAX_PAYLOAD
 FIELD_SIZE = 4  # bytes counted per field: the host does not know the types, so each counts as a float or int
 LINE_LIMIT = 1800  # characters of one core.telemetry(...) line, well within Lizard's console line of 2048 bytes
-LAYOUT_REQUEST_INTERVAL = 2.0  # seconds between two core.telemetry_info() requests for missing layouts
 WARNING_INTERVAL = 30.0  # seconds between two notifications about frames of an outdated startup script
 FIELD_NAME = re.compile(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*){0,2}')  # variable, module.property or module.property.sub
 
@@ -26,16 +26,16 @@ class CoreTelemetry:
 
     def __init__(self, request_layouts: Callable[[], None]) -> None:
         """
-        :param request_layouts: called to send ``core.telemetry_info()``, at most every ``LAYOUT_REQUEST_INTERVAL``
+        :param request_layouts: called to send ``core.telemetry_info()`` when a frame lacks its layout
         """
         self._request_layouts = request_layouts
-        self._decoder = TelemetryDecoder()
+        self._decoder = lh.TelemetryDecoder()
+        self._layout_requester = lh.LayoutRequester()
         self._fields: list[tuple[str, int]] = []  # name and precision, in the order of the text line
         self._frames: set[tuple[str, ...]] = set()
-        self._last_request = -math.inf
         self._last_warning = -math.inf
         self._step_millis: int | None = None
-        self._step_values: dict[str, Value] = {}
+        self._step_values: dict[str, float | int | bool] = {}
         self._step_frames: set[tuple[str, ...]] = set()
 
     def lizard_code(self, output_fields: list[str]) -> str:
@@ -64,11 +64,10 @@ class CoreTelemetry:
         if not line.startswith(('~', '__LAYOUT__')):
             return line
         frame = self._decoder.feed(line)
-        if not isinstance(frame, Frame):  # a layout line or a malformed line
-            return ''
-        if frame.values is None:
-            self._request_layouts_throttled()
-            return ''
+        if self._layout_requester.feed(frame, rosys.time()):
+            self._request_layouts()
+        if not isinstance(frame, lh.Frame) or frame.values is None:
+            return ''  # a layout line, a malformed line or a frame without its layout
         fields = tuple(frame.values)
         if fields not in self._frames:
             self._warn_throttled()
@@ -84,12 +83,6 @@ class CoreTelemetry:
         self._step_millis = None  # the next frame starts a new step, even with the same millis
         words = [_format(self._step_values[name], precision) for name, precision in self._fields]
         return ' '.join(['core', str(frame.millis), *words])
-
-    def _request_layouts_throttled(self) -> None:
-        now = rosys.time()
-        if now - self._last_request >= LAYOUT_REQUEST_INTERVAL:
-            self._last_request = now
-            self._request_layouts()
 
     def _warn_throttled(self) -> None:
         now = rosys.time()
@@ -113,7 +106,7 @@ def _fits(frame: list[str]) -> bool:
     return len(frame) * FIELD_SIZE <= MAX_PAYLOAD and len(_code(frame)) <= LINE_LIMIT
 
 
-def _format(value: Value, precision: int) -> str:
+def _format(value: float | int | bool, precision: int) -> str:
     """A value as ``core.output`` prints it, floats with the field's precision."""
     if isinstance(value, bool):
         return 'true' if value else 'false'
