@@ -9,7 +9,7 @@ from test_robot_brain import MISMATCH_MESSAGE, CommunicationSimulation  # pylint
 
 import rosys
 from rosys.hardware import ModuleHardware, RobotBrain, RobotHardware
-from rosys.hardware.core_telemetry import LINE_LIMIT, CoreTelemetry
+from rosys.hardware.core_telemetry import LINE_LIMIT, OUTDATED_AFTER_STEPS, CoreTelemetry
 from rosys.testing import forward
 
 TYPE_LETTERS = {bool: '?', int: 'i', float: 'f'}
@@ -49,7 +49,7 @@ def frame_line(frame_id: int, fields: Fields, *, seq: int = 0, millis: int = 0) 
     return '~' + base64.b64encode(body).decode()
 
 
-def planned_frames(code: str) -> list[list[str]]:
+def calls(code: str) -> list[list[str]]:
     return [line.removeprefix('core.telemetry(').removesuffix(')').split(', ') for line in code.splitlines()]
 
 
@@ -59,22 +59,24 @@ def test_the_frame_helpers_match_lizards_documented_example() -> None:
     assert frame_line(1, fields, seq=7, millis=123456) == '~Ab8HQOIBALbznT8IAAAAAY/t'
 
 
-def test_core_fields_go_into_one_frame_once_and_without_their_precision() -> None:
+def test_core_fields_go_into_one_call_once_and_without_their_precision() -> None:
     code = CoreTelemetry(lambda: None).lizard_code(['wheels.linear_speed:4', 'wheels.locked',
                                                     'p2t.delta_2.angle_left:3', 'p2_ms', 'wheels.locked'])
     assert code == 'core.telemetry(wheels.linear_speed, wheels.locked, p2t.delta_2.angle_left, p2_ms)\n'
 
 
-def test_core_fields_beyond_a_frame_split_into_several_frames() -> None:
+def test_core_fields_beyond_a_frame_stay_in_one_call_which_lizard_splits() -> None:
     code = CoreTelemetry(lambda: None).lizard_code([f'module.field_{index}:2' for index in range(100)])
-    assert [len(frame) for frame in planned_frames(code)] == [45, 45, 10]  # 45 fields of 4 bytes fill 180 bytes
+    assert [len(call) for call in calls(code)] == [100]  # 400 bytes of values, which Lizard sends in three frames
 
 
-def test_core_fields_beyond_a_startup_script_line_split_into_several_frames() -> None:
-    code = CoreTelemetry(lambda: None).lizard_code([f'module.{"x" * 50}_{index}:2' for index in range(40)])
+def test_core_fields_beyond_a_startup_script_line_go_into_several_calls() -> None:
+    fields = [f'module.{"x" * 50}_{index}:2' for index in range(40)]
+    code = CoreTelemetry(lambda: None).lizard_code(fields)
     lines = code.splitlines()
-    assert len(lines) == 2  # 40 fields of 4 bytes fit into one frame, but their names not into one line
+    assert len(lines) == 2  # the names of the 40 fields do not fit into one line
     assert all(len(line) <= LINE_LIMIT for line in lines)
+    assert [name for call in calls(code) for name in call] == [field.removesuffix(':2') for field in fields]
 
 
 def test_core_fields_must_be_properties_or_variables() -> None:
@@ -112,9 +114,12 @@ def test_other_lines_pass_unchanged() -> None:
     assert telemetry.translate('bus[2]: ~AbC=') == 'bus[2]: ~AbC='  # a peer's frame is not the core's
 
 
-def test_the_frames_of_one_step_are_reassembled_by_millis() -> None:
+@pytest.mark.parametrize('split', [45, 20], ids=['45 + 5 fields', '20 + 30 fields'])
+def test_the_frames_of_one_step_are_reassembled_by_millis(split: int) -> None:
     telemetry = CoreTelemetry(lambda: None)
-    first, second = planned_frames(telemetry.lizard_code([f'm.f{index}:1' for index in range(50)]))
+    names = [f'm.f{index}' for index in range(50)]
+    telemetry.lizard_code([f'{name}:1' for name in names])
+    first, second = names[:split], names[split:]  # Lizard decides where a frame ends; the layouts tell
     for line in layout_lines(1, [(name, 0) for name in first]) + layout_lines(2, [(name, 0) for name in second]):
         telemetry.translate(line)
 
@@ -176,6 +181,21 @@ def test_layouts_that_are_still_coming_are_not_requested_again(rosys_integration
     rosys.set_time(2.5)
     assert telemetry.translate(frame_line(1, fields)) == ''
     assert requests == [0.0]
+
+
+def test_frames_that_keep_lacking_fields_count_as_an_outdated_startup_script(rosys_integration: None) -> None:
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    telemetry = CoreTelemetry(lambda: None)
+    telemetry.lizard_code(['m.a', 'm.b'])
+    old_fields = [('m.a', 1)]  # the core still runs a startup script without m.b
+    for line in layout_lines(1, old_fields):
+        telemetry.translate(line)
+    for step in range(OUTDATED_AFTER_STEPS):
+        assert telemetry.translate(frame_line(1, old_fields, millis=10 * step)) == ''
+    assert not notifications  # a lost frame or layout lines on their way leave steps incomplete as well
+    assert telemetry.translate(frame_line(1, old_fields, millis=10 * OUTDATED_AFTER_STEPS)) == ''
+    assert [MISMATCH_MESSAGE in message for message in notifications] == [True]
 
 
 def test_malformed_telemetry_lines_are_dropped() -> None:

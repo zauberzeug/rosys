@@ -7,10 +7,9 @@ import lizard_host as lh
 
 from .. import rosys
 
-MAX_PAYLOAD = 180  # bytes of values in one frame, Lizard's telemetry::MAX_PAYLOAD
-FIELD_SIZE = 4  # bytes counted per field: the host does not know the types, so each counts as a float or int
 LINE_LIMIT = 1800  # characters of one core.telemetry(...) line, well within Lizard's console line of 2048 bytes
 WARNING_INTERVAL = 30.0  # seconds between two notifications about frames of an outdated startup script
+OUTDATED_AFTER_STEPS = 300  # steps in a row without all fields (3 s of Lizard's 10 ms loop) that count as outdated
 FIELD_NAME = re.compile(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*){0,2}')  # variable, module.property or module.property.sub
 
 
@@ -18,10 +17,11 @@ class CoreTelemetry:
     """Defines the core's telemetry frames and turns them back into the text line ``core.output`` would have printed.
 
     The fields are the modules' ``core_message_fields``: properties and variables with an optional ``:<precision>``.
-    The frames carry each field once and without its precision; the line repeats and formats them like ``core.output``.
+    ``core.telemetry`` gets each field once and without its precision and splits them into frames by itself;
+    the line repeats and formats them like ``core.output``.
     Floats travel as float32, so beyond about 7 significant digits the line differs from that of ``core.output``.
-    Fields beyond one frame go into several; the line is built once all frames with the same millis have arrived.
-    A frame of other fields is taken as a sign of an outdated startup script.
+    The frames of a step carry the same millis, and the line is built as soon as they brought all fields.
+    A frame with another field, and frames that keep lacking fields, are taken as a sign of an outdated startup script.
     """
 
     def __init__(self, request_layouts: Callable[[], None]) -> None:
@@ -32,34 +32,37 @@ class CoreTelemetry:
         self._decoder = lh.TelemetryDecoder()
         self._layout_requester = lh.LayoutRequester()
         self._fields: list[tuple[str, int]] = []  # name and precision, in the order of the text line
-        self._frames: set[tuple[str, ...]] = set()
+        self._names: frozenset[str] = frozenset()
+        self._step: lh.Step | None = None  # the frames that arrived with the current millis
+        self._incomplete_steps = 0
         self._last_warning = -math.inf
-        self._step_millis: int | None = None
-        self._step_values: dict[str, float | int | bool] = {}
-        self._step_frames: set[tuple[str, ...]] = set()
 
     def lizard_code(self, output_fields: list[str]) -> str:
-        """Plan the frames for the given ``core.output`` fields and return the Lizard code that defines them.
+        """Take the given ``core.output`` fields and return the Lizard code that sends them as telemetry frames.
+
+        Lizard splits a call into as many frames as its values need, so the fields only go into several calls
+        where a line of the startup script would get too long.
 
         :raises ValueError: if a field is not a property or variable with an optional precision
         """
         self._fields = [_parse(field) for field in output_fields]
-        frames: list[list[str]] = [[]]
-        for name in dict.fromkeys(name for name, _ in self._fields):
-            if frames[-1] and not _fits([*frames[-1], name]):
-                frames.append([])
-            frames[-1].append(name)
-        if not frames[0]:
-            frames = [['core.millis']]  # Lizard needs a field, and the frame still marks each step
-        self._frames = {tuple(frame) for frame in frames}
-        self._step_millis = None
-        return ''.join(f'{_code(frame)}\n' for frame in frames)
+        # Lizard needs a field, and the frame still marks each step
+        names = list(dict.fromkeys(name for name, _ in self._fields)) or ['core.millis']
+        calls: list[list[str]] = [[]]
+        for name in names:
+            if calls[-1] and len(_code([*calls[-1], name])) > LINE_LIMIT:
+                calls.append([])
+            calls[-1].append(name)
+        self._names = frozenset(names)
+        self._step = None
+        self._incomplete_steps = 0
+        return ''.join(f'{_code(call)}\n' for call in calls)
 
     def translate(self, line: str) -> str:
         """Translate a console line of the core, given without checksum.
 
         :return: the line itself unless it is a telemetry line (``~...`` or ``__LAYOUT__...``);
-            for those the text line once all frames of a step have arrived, otherwise an empty line
+            for those the text line once all fields of a step have arrived, otherwise an empty line
         """
         if not line.startswith(('~', '__LAYOUT__')):
             return line
@@ -68,20 +71,22 @@ class CoreTelemetry:
             self._request_layouts()
         if not isinstance(frame, lh.Frame) or frame.values is None:
             return ''  # a layout line, a malformed line or a frame without its layout
-        fields = tuple(frame.values)
-        if fields not in self._frames:
+        if not self._names.issuperset(frame.values):
             self._warn_throttled()
             return ''
-        if frame.millis != self._step_millis:
-            self._step_millis = frame.millis
-            self._step_values = {}
-            self._step_frames = set()
-        self._step_values.update(frame.values)
-        self._step_frames.add(fields)
-        if self._step_frames != self._frames:
+        if self._step is None or self._step.millis != frame.millis:
+            if self._step is not None:  # the step before never brought all fields
+                self._incomplete_steps += 1
+                if self._incomplete_steps >= OUTDATED_AFTER_STEPS:
+                    self._warn_throttled()
+            self._step = lh.Step(frame.sender, frame.millis, [])
+        self._step.frames.append(frame)
+        values = self._step.values
+        if len(values) < len(self._names):
             return ''
-        self._step_millis = None  # the next frame starts a new step, even with the same millis
-        words = [_format(self._step_values[name], precision) for name, precision in self._fields]
+        self._step = None  # the next frame starts a new step, even with the same millis
+        self._incomplete_steps = 0
+        words = [_format(values[name], precision) for name, precision in self._fields]
         return ' '.join(['core', str(frame.millis), *words])
 
     def _warn_throttled(self) -> None:
@@ -98,12 +103,8 @@ def _parse(field: str) -> tuple[str, int]:
     return name, int(precision or 0)
 
 
-def _code(frame: list[str]) -> str:
-    return f'core.telemetry({", ".join(frame)})'
-
-
-def _fits(frame: list[str]) -> bool:
-    return len(frame) * FIELD_SIZE <= MAX_PAYLOAD and len(_code(frame)) <= LINE_LIMIT
+def _code(names: list[str]) -> str:
+    return f'core.telemetry({", ".join(names)})'
 
 
 def _format(value: float | int | bool, precision: int) -> str:
