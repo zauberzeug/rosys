@@ -1,3 +1,4 @@
+import asyncio
 import re
 from collections import deque
 from dataclasses import dataclass
@@ -16,6 +17,7 @@ from rosys.hardware import (
     RobotBrain,
     RobotHardware,
     SerialHardware,
+    robot_brain,
 )
 from rosys.hardware.communication import Communication
 from rosys.hardware.robot_brain import augment
@@ -39,6 +41,12 @@ rdyp.on()
 en3.on()
 '''
 """What the modules generate behind an ``Expander``, unchanged by the expander bus."""
+INFO_END = ['compile time: Nov 13 2026, 17:05:21', 'idf version: v5.3.6']
+LIZARD_0_16 = ['project name: lizard', 'project version: v0.16.0', *INFO_END]
+LIZARD_0_15 = ['project name: lizard', 'version: v0.15.1', *INFO_END]
+PROJECT_ON_0_16 = ['project name: my-robot', 'project version: v2.2.0', 'lizard version: v0.16.0', *INFO_END]
+PROJECT_WITHOUT_LIZARD_VERSION = ['project name: my-robot', 'version: v2.1.0', *INFO_END]
+"""``core.info()`` of a project with its own version that is built from a Lizard before 0.16.0, release or not."""
 
 
 def checksum(lines: list[str]) -> str:
@@ -54,6 +62,8 @@ class CoreSimulation(Communication):
         self.incoming: deque[str] = deque()
         self.sent: list[str] = []
         self.core_checksum = '0000'
+        self.core_info = LIZARD_0_16
+        self.core_knows_telemetry = True
         self.flash_answer = FLASHED
         self.mirrors: dict[str, float] = {}
         self.routines: dict[str, tuple[str, list[str]]] = {}
@@ -64,6 +74,8 @@ class CoreSimulation(Communication):
         """Startup lines that get lost on the bus."""
         self.p0_noise: list[str] = []
         """Lines that the expander prints before each answer."""
+        self.p0_info = LIZARD_0_16
+        self.p0_knows_telemetry = True
         self.peer_2_lines: list[str] = []
         """Lines of a peer 2 of another serial bus on the core that arrive before each answer of the expander."""
 
@@ -80,6 +92,11 @@ class CoreSimulation(Communication):
         self.sent.append(line)
         if line == 'core.startup_checksum()':
             self.incoming.append(f'checksum: {self.core_checksum}')
+        elif line == 'core.info()':
+            self.incoming.extend(self.core_info)
+        elif line == 'core.telemetry_info()':
+            if not self.core_knows_telemetry:
+                self.incoming.append('error processing uart0: unknown method "core.telemetry_info"')
         elif line == FLASH:
             self.incoming.append(self.flash_answer)
             if self.flash_answer == FLASHED:
@@ -111,6 +128,11 @@ class CoreSimulation(Communication):
             self.incoming.append(f'p0[2]: checksum: {checksum(self.p0_edit)}')
         elif command == 'core.version()':
             self.incoming.append('p0[2]: version: lizard v0.16.0-12-gabcdef0')
+        elif command == 'core.info()':
+            self.incoming.extend(f'p0[2]: {line}' for line in self.p0_info)
+        elif command == 'core.telemetry_info()':
+            if not self.p0_knows_telemetry:
+                self.incoming.append('p0[2]: error processing command: unknown method "core.telemetry_info"')
         elif match := re.fullmatch(r'core\.get_pin_status\((\d+)\)', command):
             self.incoming.append(f'p0[2]: GPIO_Status[{match.group(1)}]| Level: 1| InputEn: 1| OutputEn: 0| '
                                  'OpenDrain: 0| Pullup: 1| Pulldown: 0| DriveStrength: 2| SleepSel: 0')
@@ -171,6 +193,15 @@ async def robot(rosys_integration: None) -> Robot:
 async def run(coroutine):
     task = background_tasks.create(coroutine, name='test')
     await forward(until=task.done, timeout=300)
+    return task.result()
+
+
+async def run_with_silence(coroutine):
+    """Like ``run``, for a request that stays unanswered: lizard-host waits for it on the event loop's clock."""
+    task = background_tasks.create(coroutine, name='test')
+    while not task.done():
+        await forward(seconds=0.1)
+        await asyncio.sleep(0.01)
     return task.result()
 
 
@@ -337,8 +368,8 @@ async def test_configure_verifies_before_saving_and_after_restarting(robot: Robo
     assert await run(robot.p0.configure())
     lines = robot.p0.startup.splitlines()
     assert robot.core.p0_saved == lines
-    assert robot.core.p0_commands == ['!-', *(f'!+{line}' for line in lines), 'core.startup_checksum()', '!.',
-                                      'core.restart()', 'core.startup_checksum()']
+    assert robot.core.p0_commands == ['core.info()', '!-', *(f'!+{line}' for line in lines),
+                                      'core.startup_checksum()', '!.', 'core.restart()', 'core.startup_checksum()']
     assert robot.p0.runs_startup
     assert robot.notifications[-2:] == ['Configuring p0...', 'p0 configured']
 
@@ -350,7 +381,7 @@ async def test_configure_checks_a_long_startup_every_20_lines(robot: Robot) -> N
     assert await run(robot.p0.configure())
     assert robot.core.p0_saved == lines
     # NOTE: the check waits until the lines have passed the bus's queue to the expander
-    assert robot.core.p0_commands[20:23] == [f'!+{lines[19]}', 'core.startup_checksum()', f'!+{lines[20]}']
+    assert robot.core.p0_commands[21:24] == [f'!+{lines[19]}', 'core.startup_checksum()', f'!+{lines[20]}']
 
 
 async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
@@ -369,6 +400,59 @@ async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
     await forward(seconds=3.0)  # NOTE: the check after the restart
     assert robot.notifications[-1] == (f'p0 runs startup {checksum(["old = Output(2)"])} instead of '
                                        f'{robot.p0.local_checksum}; please configure p0')
+
+
+@pytest.mark.parametrize('info, knows_telemetry, refusal, asked', [
+    (LIZARD_0_15, False, 'The startup script for p0[2] uses telemetry frames (core.telemetry), which needs Lizard '
+                         'v0.16.0 or newer, but the firmware is built from Lizard v0.15.1.', False),
+    (PROJECT_WITHOUT_LIZARD_VERSION, False, 'The startup script for p0[2] uses telemetry frames (core.telemetry), '
+                                            'which needs Lizard v0.16.0 or newer, but the firmware does not know '
+                                            'core.telemetry_info() of Lizard v0.16.0.', True),
+    (PROJECT_WITHOUT_LIZARD_VERSION, True, None, True),
+    (PROJECT_ON_0_16, True, None, False),
+    ([], True, None, True),
+], ids=['Lizard 0.15.1', 'project on a Lizard before 0.16.0', 'project on a build with telemetry',
+        'project on Lizard 0.16.0', 'no answer to core.info()'])
+async def test_configure_refuses_a_firmware_of_the_expander_that_lacks_a_feature(robot: Robot,
+                                                                                 monkeypatch: pytest.MonkeyPatch,
+                                                                                 info: list[str], knows_telemetry: bool,
+                                                                                 refusal: str | None,
+                                                                                 asked: bool) -> None:
+    monkeypatch.setattr(robot_brain, 'FIRMWARE_VERSION_TIMEOUT', 0.1)  # NOTE: an expander with telemetry is silent
+    robot.core.p0_info = info
+    robot.core.p0_knows_telemetry = knows_telemetry
+    robot.core.p0_saved = ['old = Output(2)']
+    assert await run_with_silence(robot.p0.configure()) == (refusal is None)
+    assert robot.core.p0_commands[0] == 'core.info()'
+    assert ('core.telemetry_info()' in robot.core.p0_commands) == asked  # only where the version leaves it open
+    if refusal is None:
+        assert robot.core.p0_saved == robot.p0.startup.splitlines()
+        assert robot.p0.runs_startup
+    else:
+        assert robot.notifications[-1] == f'Configuring p0 failed: {refusal}'
+        assert not any(command.startswith('!') for command in robot.core.p0_commands), 'the expander keeps its startup'
+        assert 'core.restart()' not in robot.core.p0_commands
+        assert not robot.p0.runs_startup
+
+
+@pytest.mark.parametrize('info, knows_telemetry, refusal', [
+    (LIZARD_0_15, False, 'The startup script for core uses the BusTelemetry module, which needs Lizard v0.16.0 or '
+                         'newer, but the firmware is built from Lizard v0.15.1.'),
+    (PROJECT_WITHOUT_LIZARD_VERSION, False, 'The startup script for core uses the BusTelemetry module, which needs '
+                                            'Lizard v0.16.0 or newer, but the firmware does not know '
+                                            'core.telemetry_info() of Lizard v0.16.0.'),
+    (PROJECT_ON_0_16, True, None),
+], ids=['Lizard 0.15.1', 'project on a Lizard before 0.16.0', 'project on Lizard 0.16.0'])
+async def test_the_core_refuses_its_startup_with_the_expander_bus_on_a_firmware_without_it(
+        robot: Robot, info: list[str], knows_telemetry: bool, refusal: str | None) -> None:
+    robot.core.core_info = info
+    robot.core.core_knows_telemetry = knows_telemetry
+    assert await run(robot.brain.refuse_script(robot.brain.lizard_code)) == refusal
+    if refusal is not None:
+        assert not await run(robot.brain.configure())
+        assert robot.notifications[-1] == f'Configuring Lizard failed: {refusal}'
+        assert not any(line.startswith('!') for line in robot.core.sent), 'the core keeps its startup script'
+        assert 'core.restart()' not in robot.core.sent
 
 
 async def test_configure_and_flash_refuse_to_run_twice(robot: Robot) -> None:

@@ -234,7 +234,8 @@ class ExpanderBusHardware(ModuleHardware):
     async def configure(self) -> bool:
         """Replace the expander's startup script with ``startup`` and restart the expander.
 
-        Like the core's, the script is verified before it is saved and once more after the restart.
+        Like the core's, the script is verified before it is saved and once more after the restart,
+        and it is refused before anything is written if the expander's firmware lacks a feature that it uses.
 
         :return: whether the expander runs ``startup``
         """
@@ -263,6 +264,9 @@ class ExpanderBusHardware(ModuleHardware):
 
         :return: why the expander does not run ``startup``, or ``None`` if it does
         """
+        reason = await self.robot_brain.refuse_script(self.startup, self.target)
+        if reason is not None:
+            return reason  # NOTE: nothing was written yet, so the expander keeps the startup script it runs
         try:
             async with self._reply_locks['checksum:']:  # NOTE: the procedure reads checksums, which carry no request ID
                 await self.robot_brain.connection.write_startup(self.startup, self.target,
