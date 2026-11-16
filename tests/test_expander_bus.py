@@ -17,6 +17,7 @@ from rosys.hardware import (
     RobotBrain,
     RobotHardware,
     SerialHardware,
+    expander_bus,
     robot_brain,
 )
 from rosys.hardware.communication import Communication
@@ -72,6 +73,8 @@ class CoreSimulation(Communication):
         self.p0_saved: list[str] = []
         self.p0_drops: set[str] = set()
         """Startup lines that get lost on the bus."""
+        self.p0_saves = True
+        """Whether the expander stores its edited startup script on ``!.``."""
         self.p0_noise: list[str] = []
         """Lines that the expander prints before each answer."""
         self.p0_info = LIZARD_0_16
@@ -122,7 +125,8 @@ class CoreSimulation(Communication):
             if command[2:] not in self.p0_drops:
                 self.p0_edit.append(command[2:])
         elif command == '!.':
-            self.p0_saved = list(self.p0_edit)
+            if self.p0_saves:
+                self.p0_saved = list(self.p0_edit)
         elif command == 'core.restart()':
             self.p0_edit = list(self.p0_saved)
             self.incoming.extend(f'p0[2]: {line}' for line in self.p0_boot_lines)
@@ -374,6 +378,7 @@ async def test_configure_verifies_before_saving_and_after_restarting(robot: Robo
                                       'core.startup_checksum()', '!.', 'core.restart()', 'core.startup_checksum()']
     assert robot.p0.runs_startup
     assert robot.notifications[-2:] == ['Configuring p0...', 'p0 configured']
+    assert await run(robot.p0.check_startup()) is None
 
 
 async def test_configure_checks_a_long_startup_every_20_lines(robot: Robot) -> None:
@@ -402,6 +407,25 @@ async def test_configure_saves_nothing_after_a_lost_line(robot: Robot) -> None:
     await forward(seconds=3.0)  # NOTE: the check after the restart
     assert robot.notifications[-1] == (f'p0 runs startup {checksum(["old = Output(2)"])} instead of '
                                        f'{robot.p0.local_checksum}; please configure p0')
+
+
+async def test_configure_fails_if_the_expander_did_not_store_its_startup(robot: Robot) -> None:
+    robot.core.p0_saved = ['old = Output(2)']
+    robot.core.p0_saves = False
+    assert not await run(robot.p0.configure())
+    assert robot.notifications[-1] == ('Configuring p0 failed: Verifying the stored startup script of p0[2] failed: '
+                                       f'checksum {checksum(["old = Output(2)"])} instead of {robot.p0.local_checksum}')
+    assert not robot.p0.runs_startup
+
+
+async def test_configure_fails_without_a_ready_of_the_restarted_expander(robot: Robot,
+                                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(expander_bus, 'READY_TIMEOUT', 0.1)
+    robot.core.p0_boot_lines = []
+    assert not await run_with_silence(robot.p0.configure())
+    assert robot.notifications[-1] == ('Configuring p0 failed: '
+                                       'p0[2] did not report "Ready." within 0 s after its restart')
+    assert not robot.p0.runs_startup
 
 
 @pytest.mark.parametrize('info, knows_telemetry, refusal, asked', [
@@ -616,7 +640,8 @@ async def test_the_expander_refuses_what_its_startup_or_frames_cannot_carry(rosy
         p0.add_lizard_code('x = "' + 'y' * 250 + '"')
     with pytest.raises(ValueError, match='too long for serial bus p0'):  # NOTE: the telemetry line of the interval
         p0.add_lizard_code('', [(f'module_{index}.a_long_property_name', 'float') for index in range(9)], interval=2.0)
-    p0.add_lizard_code('', [(f'f{index}', 'float') for index in range(46)], interval=0.5)  # two frames since Lizard 0.16
+    # NOTE: two frames since Lizard 0.16.0
+    p0.add_lizard_code('', [(f'f{index}', 'float') for index in range(46)], interval=0.5)
     for index in range(5):
         p0.add_lizard_code('', [(f'g{index}', 'bool')], interval=index + 1)
     with pytest.raises(ValueError, match='at most 8 telemetry frames, these fields need 9'):
