@@ -371,7 +371,10 @@ async def test_a_restarted_expander_is_checked(robot: Robot) -> None:
 
 async def test_configure_verifies_before_saving_and_after_restarting(robot: Robot) -> None:
     robot.core.p0_saved = ['old = Output(2)']
+    configured: list[bool] = []
+    robot.p0.CONFIGURED.subscribe(lambda: configured.append(True))
     assert await run(robot.p0.configure())
+    assert configured == [True]
     lines = robot.p0.startup.splitlines()
     assert robot.core.p0_saved == lines
     assert robot.core.p0_commands == ['core.info()', '!-', *(f'!+{line}' for line in lines),
@@ -591,7 +594,7 @@ async def test_flash_copies_the_firmware_and_configures_the_expander(robot: Robo
 
 async def test_flash_needs_the_core_startup_with_the_expander_bus(robot: Robot) -> None:
     robot.core.core_checksum = 'beef'  # NOTE: e.g. the core still runs an expander
-    with pytest.raises(FirmwareFlashError, match='serial bus'):
+    with pytest.raises(FirmwareFlashError, match='serial bus failed: configure the core with its expander bus first'):
         await run(robot.brain.lizard_firmware.flash_p0())
     assert FLASH not in robot.core.sent
     assert 'configure the core with its expander bus first' in robot.notifications[-1]
@@ -611,8 +614,11 @@ async def test_mirror_warnings_notify_only_outside_flash_and_configure(robot: Ro
 
 async def test_a_failed_flash_writes_no_startup(robot: Robot) -> None:
     robot.core.flash_answer = 'error processing uart0: serial bus "p0" could not flash peer 2'
+    configured: list[bool] = []
+    robot.p0.CONFIGURED.subscribe(lambda: configured.append(True))
     assert not await run(robot.p0.flash(timeout=5))
     assert robot.core.p0_commands == []
+    assert not configured
     assert robot.notifications[-1] == 'Flashing p0 failed: serial bus "p0" could not flash peer 2'
 
     robot.core.flash_answer = 'error processing uart0: output "p0_enable" is no GPIO pin of this node'

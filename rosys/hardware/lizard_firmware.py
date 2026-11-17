@@ -276,7 +276,7 @@ class LizardFirmware:
             # the transfer before anything is erased
             self.progress = 'waiting for the Core to replicate its firmware to the P0'
             if not await self.expander_bus.flash(timeout=timeout):
-                self._fail('Flashing P0 over its serial bus failed.')  # NOTE: the bus has notified the reason
+                self._fail(f'Flashing P0 over its serial bus failed: {self.expander_bus.problem}')
             await self.read_p0_version()
             self.progress = 'Finished.'
             rosys.notify('Finished.', 'positive')

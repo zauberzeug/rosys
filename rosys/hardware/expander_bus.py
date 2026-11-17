@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 import lizard_host as lh
-from nicegui import background_tasks, ui
+from nicegui import Event, background_tasks, ui
 
 from .. import rosys
 from .module import ModuleHardware
@@ -91,6 +91,10 @@ class ExpanderBusHardware(ModuleHardware):
         self._ready_count = 0
         self._flashing = False
         self._flash_result: str | None = None
+        self.problem: str | None = None
+        """why the last ``configure()`` or ``flash()`` failed, or ``None`` if it did not"""
+        self.CONFIGURED = Event[[]]()
+        """the expander runs a freshly written startup script"""
         robot_brain.LINE_RECEIVED.subscribe(self._handle_line)
         robot_brain.ESP_CONNECTED.subscribe(self._check_after_connect)
         robot_brain.lizard_firmware.expander_bus = self
@@ -241,10 +245,12 @@ class ExpanderBusHardware(ModuleHardware):
         :return: whether the expander runs ``startup``
         """
         if not self.robot_brain.is_ready:
-            rosys.notify(f'Configuring {self.name} failed: Robot Brain is not ready', 'negative')
+            self.problem = 'Robot Brain is not ready'
+            rosys.notify(f'Configuring {self.name} failed: {self.problem}', 'negative')
             return False
         if self.busy:
-            rosys.notify(f'{self.name} is being flashed or configured already', 'warning')
+            self.problem = f'{self.name} is being flashed or configured already'
+            rosys.notify(self.problem, 'warning')
             return False
         rosys.notify(f'Configuring {self.name}...')
         self.busy = True
@@ -254,10 +260,12 @@ class ExpanderBusHardware(ModuleHardware):
             self.runs_startup = problem is None
         finally:
             self.busy = False
+        self.problem = problem
         if problem is not None:
             rosys.notify(f'Configuring {self.name} failed: {problem}', 'negative', log_level=logging.ERROR)
             return False
         rosys.notify(f'{self.name} configured', 'positive')
+        self.CONFIGURED.emit()
         return True
 
     async def _write_startup(self) -> str | None:
@@ -286,13 +294,15 @@ class ExpanderBusHardware(ModuleHardware):
         :return: whether the expander runs the core's firmware and ``startup``
         """
         if self.busy:
-            rosys.notify(f'{self.name} is being flashed or configured already', 'warning')
+            self.problem = f'{self.name} is being flashed or configured already'
+            rosys.notify(self.problem, 'warning')
             return False
         firmware = self.robot_brain.lizard_firmware
         firmware.read_local_checksum()
         await firmware.read_core_checksum()
         if not firmware.checksums_match:
-            rosys.notify(f'Flashing {self.name} failed: configure the core with its expander bus first', 'negative')
+            self.problem = 'configure the core with its expander bus first'
+            rosys.notify(f'Flashing {self.name} failed: {self.problem}', 'negative')
             return False
         rosys.notify(f'Flashing {self.name}, the core pauses for about a minute...')
         self.busy = True
@@ -309,12 +319,12 @@ class ExpanderBusHardware(ModuleHardware):
             finally:
                 self._flashing = False
             if self._flash_result != 'flashed':
-                rosys.notify(f'Flashing {self.name} failed: {self._flash_result or "the core did not finish in time"}',
-                             'negative', log_level=logging.ERROR)
+                self.problem = self._flash_result or 'the core did not finish in time'
+                rosys.notify(f'Flashing {self.name} failed: {self.problem}', 'negative', log_level=logging.ERROR)
                 return False
             if not await self._wait_for_ready(ready_count):
-                rosys.notify(f'{self.name} was flashed but does not report "Ready."', 'negative',
-                             log_level=logging.ERROR)
+                self.problem = f'{self.name} was flashed but does not report "Ready."'
+                rosys.notify(self.problem, 'negative', log_level=logging.ERROR)
                 return False
         finally:
             self.busy = False
