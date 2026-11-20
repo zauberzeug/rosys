@@ -257,8 +257,6 @@ class RecordingsPage:
             # subscribing to the process-lifetime recorder, so handlers don't accumulate
             # across page visits, and reloading only on a change keeps it off idle ticks.
             token = await rosys.run.io_bound(_change_token)
-            if token is None:
-                return  # recorder shut down mid-scan
             live = next((info.path for info in infos if info.is_live), None)
             if token != (tuple(info.path for info in infos), live, frozenset(shown_merges)):
                 await reload()

@@ -38,6 +38,7 @@ A few facts shape almost everything:
   Note `on_repeat` waits one interval before its first call — it is not immediate.
 - **Don't block the loop:** wrap CPU-heavy work in `await rosys.run.cpu_bound(...)` and blocking I/O in `await rosys.run.io_bound(...)`.
   Both raise `CancelledError` when the pools are already shut down, just as when the awaiting task is cancelled.
+  Within `rosys.on_shutdown` handlers the pools still run offloaded work, so a handler must not release what a running call still uses.
   `cpu_bound` runs in a _spawned_ subprocess, so its callback and arguments must be picklable (module-level functions, no closures or `self`), and each worker re-imports the user's `__main__`.
 - **Events** are typed `Event[T]` with `.emit()` / `.subscribe()` (imported from `nicegui`, not defined in `rosys` — grepping the `rosys` package for `class Event` finds nothing); event names are `SCREAMING_SNAKE_CASE` (e.g. `VELOCITY_MEASURED`).
 

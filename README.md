@@ -131,7 +131,16 @@ you should wrap the code in a function and await it with `await rosys.run.cpu_bo
 RoSys starts helper processes (MJPEG stream workers, path planning) with the `spawn` start method, which re-imports your main script in the child.
 A script that creates these at import time must therefore put its startup under `if __name__ == '__main__':`, or the helpers start recursively.
 The workers of `rosys.run.cpu_bound` are spawned as well, so anything your main script does at import time runs once per worker.
-Move opening a serial port and the like into `rosys.on_startup` or under the same guard, or a worker opens the port a second time.
+A worker that opens the serial port a second time disturbs the running connection to the microcontroller:
+it resets the baud rate and flushes the input, which corrupts incoming lines.
+So create such hardware under `if __name__ == '__main__':` and pass `reload=False` to `ui.run`, as in the [remote camera example](https://rosys.io/examples/cameras/).
+With `reload=True` the guard does not help, because the server itself then runs as `__mp_main__`, just like the workers.
+
+Spawned workers also cost memory and start-up time:
+on a Jetson Orin, six workers of a bare RoSys app take about 700 MB, and the first round of calls waits about 3 seconds for them.
+An application can choose another start method by setting `nicegui.run.process_pool_start_method` before calling `ui.run`.
+`'forkserver'` saves most of the memory but still re-imports the main script.
+`'fork'` avoids both, but NiceGUI considers it unsafe in a process that runs threads.
 
 ### Safety
 

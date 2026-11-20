@@ -301,8 +301,6 @@ class DetectorHardware(Detector):
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
             # the encoder releases the GIL, so concurrent encodes run in parallel
             jpeg_bytes = await run.io_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
-            if jpeg_bytes is None:
-                raise DetectorException('JPEG encoding failed')
             return {'format': 'jpeg', 'bytes': jpeg_bytes}
         return _array_to_dict(image.array)
 

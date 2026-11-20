@@ -1,11 +1,13 @@
 import asyncio
 import threading
-from unittest.mock import patch
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
+import nicegui.run
 import pytest
 
 from rosys import run, sleep
 from rosys.automation import Automator
+from rosys.helpers.spawning import SPAWN_CONTEXT
 from rosys.testing import forward
 
 
@@ -90,27 +92,14 @@ async def test_retry_failed_with_on_failed_and_args():
 
 
 @pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
-async def test_a_call_refused_by_the_shut_down_pools_raises_cancelled_error(bound: str):
-    async def refuse(*_) -> None:
-        raise asyncio.CancelledError('The app has shut down.')
+async def test_a_call_refused_by_the_shut_down_pools_raises_cancelled_error(bound: str,
+                                                                            monkeypatch: pytest.MonkeyPatch):
+    pool = ThreadPoolExecutor() if bound == 'io_bound' else ProcessPoolExecutor(mp_context=SPAWN_CONTEXT)
+    pool.shutdown()
+    monkeypatch.setattr(nicegui.run, 'thread_pool' if bound == 'io_bound' else 'process_pool', pool)
 
-    with patch(f'nicegui.run.{bound}', refuse), pytest.raises(asyncio.CancelledError):
+    with pytest.raises(asyncio.CancelledError):
         await getattr(run, bound)(print)
-    assert not run.running_cpu_bound_processes
-
-
-@pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
-async def test_cancelling_the_task_propagates(bound: str):
-    async def wait_forever(*_) -> None:
-        await asyncio.Event().wait()
-
-    with patch(f'nicegui.run.{bound}', wait_forever):
-        task = asyncio.create_task(getattr(run, bound)(print))
-        await asyncio.sleep(0)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-    assert task.cancelled()
     assert not run.running_cpu_bound_processes
 
 

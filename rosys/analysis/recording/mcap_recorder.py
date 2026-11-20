@@ -387,11 +387,10 @@ class McapRecorder:
     async def reindex_unindexed(self) -> None:
         """Rebuild the index of every unindexed recording on a background thread."""
         unindexed = await rosys.run.io_bound(self.unindexed_recordings)  # per-file open + index probe: off the loop
-        for path in unindexed or []:
+        for path in unindexed:
             self.log.warning('reindexing unindexed recording: %s', path.name)
             recovered = await rosys.run.io_bound(reindex, path)
-            if recovered is not None:
-                self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
+            self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
 
     async def merge(self, sources: list[Path], name: str, *, start_time_ns: int = 0) -> Path | None:
         """Merge finished recordings into the kept recording ``<name>.mcap``, deleting them once it is in place.
@@ -406,7 +405,6 @@ class McapRecorder:
         :raises ValueError: if ``name`` is no plain file name, or a source is no finished recording of
             this recorder.
         :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
-        :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
         """
         ensure_plain_file_name(name)
         target = self.output_dir / f'{name}.mcap'
@@ -417,12 +415,9 @@ class McapRecorder:
             raise FileExistsError(f'{target.name} exists or is being merged already')
         self._merging.add(name)
         try:
-            result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
+            count, undeleted = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
         finally:
             self._merging.discard(name)
-        if result is None:
-            raise RuntimeError('the merge did not run, the app is shutting down')
-        count, undeleted = result
         if not count:
             return None
         self.log.info('merged %d recordings into %s (%d messages)', len(sources), target.name, count)
@@ -519,9 +514,7 @@ class McapRecorder:
 
         The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
         the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
-        via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, whose pool can
-        refuse work around the shutdown (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
-        never blocks the event loop; ``start()`` is refused meanwhile. A final part without
+        via ``rosys.run.io_bound``, so it never blocks the event loop; ``start()`` is refused meanwhile. A final part without
         messages is discarded, otherwise ``RECORDING_STOPPED`` is emitted with its path.
         """
         if not self._is_recording:
@@ -530,7 +523,7 @@ class McapRecorder:
         self._is_stopping = True
         try:
             self._stop_sources()
-            file_path, file_message_count = await asyncio.to_thread(self._drain_and_close)
+            file_path, file_message_count = await rosys.run.io_bound(self._drain_and_close)
         finally:
             self._is_stopping = False
         if file_path is None:
@@ -922,9 +915,7 @@ class McapRecorder:
 
     async def _refresh_stats(self) -> None:
         """Refresh the cached directory stats off the event loop, then rebuild the stats grid."""
-        stats = await rosys.run.io_bound(self._collect_disk_stats)
-        if stats is not None:
-            self._disk_stats = stats
+        self._disk_stats = await rosys.run.io_bound(self._collect_disk_stats)
         self._stats_ui.refresh()
 
     def _collect_disk_stats(self) -> _DiskStats:

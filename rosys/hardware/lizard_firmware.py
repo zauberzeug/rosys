@@ -93,8 +93,6 @@ class LizardFirmware:
 
     async def read_online_version(self) -> None:
         response = await rosys.run.io_bound(requests.get, self.GITHUB_URL)
-        if response is None:
-            return
         response_data = response.json()
         for item in response_data:
             try:
