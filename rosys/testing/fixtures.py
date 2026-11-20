@@ -13,6 +13,7 @@ from rosys.geometry import GeoPoint, GeoReference, Prism
 from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.testing import helpers, log_configuration
+from rosys.vision import image_route
 
 
 @pytest.fixture
@@ -20,6 +21,7 @@ async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
     core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
+    image_route.reset_encodings()
     await rosys.startup()
     yield
     await rosys.shutdown()

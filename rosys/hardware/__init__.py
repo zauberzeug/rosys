@@ -9,6 +9,7 @@ from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
 from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuMeasurement, ImuSimulation
+from .lizard_firmware import FirmwareFlashError
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import EspNotReadyException, RobotBrain
@@ -35,6 +36,7 @@ __all__ = [
     'EStopSimulation',
     'EspNotReadyException',
     'ExpanderHardware',
+    'FirmwareFlashError',
     'Gnss',
     'GnssHardware',
     'GnssMeasurement',
