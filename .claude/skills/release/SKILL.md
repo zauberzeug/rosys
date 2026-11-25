@@ -7,8 +7,8 @@ Release the milestone passed as an argument (e.g. `0.37.0`).
 Without an argument, take the oldest open milestone: `gh api 'repos/zauberzeug/rosys/milestones?state=open' --jq '.[].title'`.
 
 Milestones are named `0.37.0`, tags `v0.37.0`.
-Pushing the tag starts `.github/workflows/publish.yml`: pytest, PyPI, a GitHub release entry (created by `github-actions[bot]`, whose body is the message of the tagged commit until you replace it), and the Docker image.
-So the only things to do by hand are the notes, the tag and the release body.
+Pushing the tag starts `.github/workflows/publish.yml`: pytest, the build, a deployment review of the environment `pypi` that a maintainer approves in the Actions run, PyPI, a GitHub release entry (created by `github-actions[bot]`, whose body is the message of the tagged commit until you replace it), and the Docker image.
+So the only things to do by hand are the notes, the tag, the approval and the release body.
 
 ## 1. Check the milestone
 
@@ -100,7 +100,8 @@ git tag v<m> && git push origin v<m>
 
 ## 7. Set the release body
 
-The release appears after pytest and the PyPI upload, a few minutes after the push, with the last commit message as its body.
+After pytest and the build, the run waits for a deployment review of the environment `pypi`; ask the user to approve it in the Actions run (`gh run list --branch v<m>` shows the run, `gh run view <id> --web` opens it).
+The release appears after the PyPI upload, a few minutes after the approval, with the last commit message as its body.
 Replace it right away instead of waiting for the whole workflow (the Docker job takes several more minutes): poll `gh release view v<m>` with the `Monitor` tool, then write the notes without the summary to a scratch file and set them:
 
 ```bash
