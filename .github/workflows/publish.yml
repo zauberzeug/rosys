@@ -102,7 +102,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           username: zauberzeug
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build both platforms and push
@@ -144,7 +144,7 @@ jobs:
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
         with:
           username: zauberzeug
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: zauberzeug/rosys
           short-description: "A robot system based on web technologies with focus on autonomous mobile robots."
 
