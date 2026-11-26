@@ -174,6 +174,55 @@ async def test_a_failure_inside_an_uninterruptible_section_survives_a_stop(autom
     assert isinstance(automator.last_exception, RuntimeError)
 
 
+async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator: Automator):
+    """A failure stops the others only once the section has ended, then it is re-raised."""
+    events: list[str] = []
+
+    @rosys.automation.uninterruptible
+    async def dock() -> None:
+        try:
+            await rosys.sleep(1.0)
+            events.append('docked')
+        finally:
+            events.append('cleanup started')
+            await rosys.sleep(0.1)
+            events.append('cleanup finished')
+
+    async def flaky() -> None:
+        await rosys.sleep(0.3)
+        raise ValueError('flaky broke')
+
+    automator.start(rosys.automation.parallelize(flaky(), dock()))
+    await forward(seconds=3.0, fail_on_automation_failure=False)
+
+    assert events == ['docked', 'cleanup started', 'cleanup finished']
+    assert isinstance(automator.last_exception, ValueError)
+
+
+async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling_after_first_completed(automator: Automator):
+    """A sibling that fails while the first-completed stop is held back does not cut the section short either."""
+    events: list[str] = []
+
+    async def timeout() -> None:
+        await rosys.sleep(0.2)
+        events.append('timeout done')
+
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.sleep(1.0)
+        events.append('step done')
+
+    async def watcher() -> None:
+        await rosys.sleep(0.3)
+        raise ValueError('watcher broke')
+
+    automator.start(rosys.automation.parallelize(timeout(), step(), watcher(), return_when_first_completed=True))
+    await forward(seconds=3.0, fail_on_automation_failure=False)
+
+    assert events == ['timeout done', 'step done']
+    assert isinstance(automator.last_exception, ValueError)
+
+
 async def test_a_raising_automation_stops_forwarding(automator: Automator):
     """Forwarding stops at the failure instead of stepping through the whole span it was given."""
     async def run() -> None:

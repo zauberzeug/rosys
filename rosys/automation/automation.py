@@ -20,7 +20,7 @@ class AutomationStopped(BaseException):
     """
 
 
-def uninterruptible_depth() -> int:
+def _uninterruptible_depth() -> int:
     """How many ``@uninterruptible`` functions the currently running automation is inside of."""
     automation = _CURRENT_AUTOMATION.get()
     return automation._uninterruptible_depth if automation is not None else 0  # pylint: disable=protected-access

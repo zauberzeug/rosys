@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Coroutine
 
-from .automation import AutomationStopped, uninterruptible_depth
+from .automation import AutomationStopped, _uninterruptible_depth
 
 
 class parallelize:
@@ -12,8 +12,8 @@ class parallelize:
     to run them in parallel.
 
     Note that ``parallelize`` will be uninterruptible if one of its coroutines is marked with ``@rosys.automation.uninterruptible``.
-    This also holds for ``return_when_first_completed``: the remaining coroutines are only stopped
-    once none of them is inside an uninterruptible section anymore.
+    This also holds for ``return_when_first_completed`` and for a failing coroutine: the remaining coroutines are only
+    stopped (and a failure re-raised) once none of them is inside an uninterruptible section anymore.
     A section the caller itself is in does not hold the stop back.
     """
 
@@ -30,12 +30,12 @@ class parallelize:
         completed = [False for _ in sends]
         waiting: list[asyncio.Future | asyncio.Task | None] = [None for _ in sends]
         cancelling = False  # whether a cancellation is being drained through the unfinished coroutines
-        stop_when_interruptible = False  # a first-completed stop, held back by an uninterruptible section
+        stop_when_interruptible = False  # a first-completed stop or a failure, held back by an uninterruptible section
         exception_to_reraise: list[BaseException] = []  # holds the external stop to re-raise once draining is done
-        outer_depth = uninterruptible_depth()  # sections the caller is in do not belong to the coroutines
+        outer_depth = _uninterruptible_depth()  # sections the caller is in do not belong to the coroutines
 
         def in_uninterruptible_section() -> bool:
-            return uninterruptible_depth() > outer_depth
+            return _uninterruptible_depth() > outer_depth
 
         def cancel_unfinished(exception: BaseException, *, propagate: bool) -> None:
             """Inject *exception* into every unfinished coroutine so its cleanup (incl. ``await``) runs."""
@@ -75,11 +75,17 @@ class parallelize:
                             else:
                                 cancel_unfinished(AutomationStopped(), propagate=False)
                         continue
-                    except BaseException:
+                    except BaseException as e:
                         # the coroutine finished by (re-)raising; while draining a cancellation this is expected
                         completed[i] = True
                         if not cancelling:
-                            raise  # a genuine failure: propagate it (closing the remaining coroutines in finally)
+                            # a genuine failure: propagate it (closing the remaining coroutines in finally),
+                            # unless an uninterruptible sibling first has to run to the end of its section
+                            if not in_uninterruptible_section():
+                                raise
+                            if not exception_to_reraise:
+                                exception_to_reraise.append(e)
+                            stop_when_interruptible = True
                         continue
                     else:
                         sends[i] = iter_sends[i]
