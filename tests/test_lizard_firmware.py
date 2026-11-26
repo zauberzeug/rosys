@@ -132,27 +132,58 @@ async def test_download_refusal(lizard_firmware: LizardFirmware, notifications: 
     assert lizard_firmware.local_version is None
 
 
-@pytest.mark.parametrize('target, attr, proceeds_to', [('core', 'local_version', 'does not answer'),
-                                                       ('p0', 'core_version', 'not ready')])
+@pytest.mark.parametrize('target', ['core', 'p0'])
 @pytest.mark.parametrize('project, version, expected_message', [
     (None, None, 'version is unknown'),
     ('lizard', '0.14.0', 'not supported'),
     ('lizard-zz', '0.13.0', 'not supported'),
-    ('lizard', '0.13.0', None),
+    ('lizard', '0.13.0', 'does not answer'),
 ])
 async def test_flash_version_gate(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-                                  target: str, attr: str, proceeds_to: str,
-                                  project: str | None, version: str | None, expected_message: str | None) -> None:
+                                  target: str, project: str | None, version: str | None, expected_message: str) -> None:
     """The version gate refuses unknown and unsupported firmware; supported firmware proceeds to the next check."""
-    expected_message = expected_message or proceeds_to
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
-    if version is not None:
-        setattr(lizard_firmware, attr, version)
-        setattr(lizard_firmware, attr.replace('_version', '_project'), project)
+    if target == 'core':
+        lizard_firmware.local_project, lizard_firmware.local_version = project, version
+    else:
+        communication = lizard_firmware.robot_brain.communication
+        assert isinstance(communication, VersionCommunicationSimulation)
+        communication.core_version = f'{project} v{version}' if version is not None else 'unknown'
+        await connect(communication)
     task = background_tasks.create(getattr(lizard_firmware, f'flash_{target}')(), name=f'flash {target}')
     await forward(seconds=3.0)
     assert isinstance(task.exception(), FirmwareFlashError)
     assert expected_message in str(task.exception())
+
+
+async def test_flash_p0_reads_core_version(lizard_firmware: LizardFirmware) -> None:
+    """Flashing the P0 reads the version the Core is running instead of relying on a previously read one."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    await connect(communication)
+    assert lizard_firmware.core_version is None
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(until=task.done)
+    assert 'P0 does not answer' in str(task.exception())
+    assert lizard_firmware.core_version == '0.13.0'
+
+    communication.core_version = 'v0.14.0'
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(until=task.done)
+    assert '0.14.0 is not supported' in str(task.exception())
+
+
+async def test_read_core_version_forgets_version_without_answer(lizard_firmware: LizardFirmware,
+                                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Core that does not report its version leaves it unknown instead of keeping a previously read one."""
+    async def no_answer(*_args, **_kwargs) -> None:
+        await rosys.sleep(1.0)
+    monkeypatch.setattr(lizard_firmware.robot_brain, 'send_and_await', no_answer)
+    lizard_firmware.core_project, lizard_firmware.core_version = 'lizard', '0.13.0'
+    task = background_tasks.create(lizard_firmware.read_core_version(), name='read core version')
+    await forward(until=task.done)
+    assert lizard_firmware.core_project is None
+    assert lizard_firmware.core_version is None
 
 
 async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware,
@@ -169,7 +200,7 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware,
 
 async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardFirmware,
                                                         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Flashing a Core that never got ready leaves its version known, so flashing the P0 is not refused for it."""
+    """Flashing a Core that never got ready leaves its version known."""
     communication = lizard_firmware.robot_brain.communication
     assert isinstance(communication, VersionCommunicationSimulation)
     communication.core_answers_pin_queries = True
@@ -185,8 +216,17 @@ async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardF
     assert task.exception() is None
     assert not lizard_firmware.robot_brain.is_ready
     assert lizard_firmware.core_version == '0.13.0'
-    with pytest.raises(FirmwareFlashError, match='not ready'):
-        await lizard_firmware.flash_p0()
+
+
+async def test_flash_p0_refuses_unready_robot_brain_without_reading_version(lizard_firmware: LizardFirmware) -> None:
+    """An unready Robot Brain fails the flash at once instead of waiting for the Core's version first."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    assert not lizard_firmware.robot_brain.is_ready
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(until=task.done)
+    assert 'not ready' in str(task.exception())
+    assert 'core.version()' not in communication.sent
 
 
 async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFirmware) -> None:
@@ -194,7 +234,6 @@ async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFir
     communication = lizard_firmware.robot_brain.communication
     assert isinstance(communication, VersionCommunicationSimulation)
     await connect(communication)
-    lizard_firmware.core_project, lizard_firmware.core_version = 'lizard', '0.13.0'
     task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
     await forward(seconds=3.0)
     assert isinstance(task.exception(), FirmwareFlashError)

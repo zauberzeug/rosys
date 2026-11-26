@@ -148,6 +148,7 @@ class LizardFirmware:
                 self.core_project, self.core_version = self._parse_version_line(response)
                 self._warn_version(self.core_project, self.core_version, 'Core')
                 return
+        self.core_project, self.core_version = None, None
         self.log.error('Could not read Lizard version from Core')
 
     async def read_p0_version(self) -> None:
@@ -257,10 +258,11 @@ class LizardFirmware:
         :raises FirmwareFlashError: when a pre-check fails or the Core reports no replica within ``timeout``
         """
         self.progress = ''
-        if (reason := self._version_refusal(self.core_project, self.core_version, 'Flashing P0 failed')) is not None:
-            self._fail(reason)
         if not self.robot_brain.is_ready:
             self._fail('Flashing P0 failed. Robot Brain is not ready.')
+        await self.read_core_version()
+        if (reason := self._version_refusal(self.core_project, self.core_version, 'Flashing P0 failed')) is not None:
+            self._fail(reason)
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
         # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
