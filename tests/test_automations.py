@@ -166,6 +166,24 @@ async def test_a_failure_inside_an_uninterruptible_section_is_not_replaced_by_a_
     assert isinstance(automator.last_exception, RuntimeError)
 
 
+async def test_a_held_back_failure_is_not_replaced_by_a_failing_section(automator: Automator):
+    """When the uninterruptible sibling fails as well, the failure that came first is the one reported."""
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the step broke')
+
+    async def flaky() -> None:
+        await rosys.sleep(0.2)
+        raise ValueError('flaky broke')
+
+    automator.start(rosys.automation.parallelize(step(), flaky()))
+    with pytest.raises(AssertionError, match='flaky broke'):
+        await forward(seconds=3.0)
+    assert isinstance(automator.last_exception, ValueError)
+    assert isinstance(automator.last_exception.__cause__, RuntimeError)
+
+
 @pytest.mark.parametrize('return_when_first_completed', [False, True])
 async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator: Automator,
                                                                       return_when_first_completed: bool):

@@ -82,6 +82,9 @@ class parallelize:
                             # a genuine failure: propagate it (closing the remaining coroutines in finally),
                             # unless an uninterruptible sibling first has to run to the end of its section
                             if not in_uninterruptible_section():
+                                if exception_to_reraise:
+                                    # the failure held back for the section came first
+                                    raise exception_to_reraise[0] from e
                                 raise
                             if not exception_to_reraise:
                                 exception_to_reraise.append(e)
