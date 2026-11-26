@@ -143,46 +143,44 @@ async def test_stopping_while_first_completed_waits_for_an_uninterruptible_sibli
     assert automator.is_stopped
 
 
-async def test_a_failure_inside_an_uninterruptible_sibling_is_not_swallowed(automator: Automator):
-    """The held-back stop must not replace a failure that is already propagating out of the section."""
+@pytest.mark.parametrize('pending_stop', ['first_completed', 'stop'])
+async def test_a_failure_inside_an_uninterruptible_section_is_not_replaced_by_a_pending_stop(
+        automator: Automator, pending_stop: Literal['first_completed', 'stop']):
+    """A stop waiting for the section, from a finished sibling or the automator, must not swallow its failure."""
     async def quick() -> None:
         await rosys.sleep(0.2)
 
-    @rosys.automation.uninterruptible
-    async def slow() -> None:
-        await rosys.sleep(0.5)
-        raise RuntimeError('the step broke')
-
-    automator.start(rosys.automation.parallelize(quick(), slow(), return_when_first_completed=True))
-    with pytest.raises(AssertionError, match='the step broke'):
-        await forward(seconds=3.0)
-    assert isinstance(automator.last_exception, RuntimeError)
-
-
-async def test_a_failure_inside_an_uninterruptible_section_survives_a_stop(automator: Automator):
-    """A stop requested during the section must not replace the failure that ends it."""
     @rosys.automation.uninterruptible
     async def step() -> None:
         await rosys.sleep(0.5)
         raise RuntimeError('the step broke')
 
-    automator.start(step())
-    await forward(seconds=0.2)
-    automator.stop(because='test')
+    if pending_stop == 'first_completed':
+        automator.start(rosys.automation.parallelize(quick(), step(), return_when_first_completed=True))
+    else:
+        automator.start(step())
+        await forward(seconds=0.2)
+        automator.stop(because='test')
     with pytest.raises(AssertionError, match='the step broke'):
         await forward(seconds=3.0)
     assert isinstance(automator.last_exception, RuntimeError)
 
 
-async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator: Automator):
-    """A failure stops the others only once the section has ended, then it is re-raised."""
+@pytest.mark.parametrize('return_when_first_completed', [False, True])
+async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator: Automator,
+                                                                      return_when_first_completed: bool):
+    """A failure stops the others only once the section has ended, also while a first-completed stop is held back."""
     events: list[str] = []
 
+    async def timeout() -> None:
+        await rosys.sleep(0.2)
+        events.append('timeout done')
+
     @rosys.automation.uninterruptible
-    async def dock() -> None:
+    async def step() -> None:
         try:
             await rosys.sleep(1.0)
-            events.append('docked')
+            events.append('step done')
         finally:
             events.append('cleanup started')
             await rosys.sleep(0.1)
@@ -192,34 +190,11 @@ async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator:
         await rosys.sleep(0.3)
         raise ValueError('flaky broke')
 
-    automator.start(rosys.automation.parallelize(flaky(), dock()))
+    automator.start(rosys.automation.parallelize(timeout(), step(), flaky(),
+                                                 return_when_first_completed=return_when_first_completed))
     await forward(seconds=3.0, fail_on_automation_failure=False)
 
-    assert events == ['docked', 'cleanup started', 'cleanup finished']
-    assert isinstance(automator.last_exception, ValueError)
-
-
-async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling_after_first_completed(automator: Automator):
-    """A sibling that fails while the first-completed stop is held back does not cut the section short either."""
-    events: list[str] = []
-
-    async def timeout() -> None:
-        await rosys.sleep(0.2)
-        events.append('timeout done')
-
-    @rosys.automation.uninterruptible
-    async def step() -> None:
-        await rosys.sleep(1.0)
-        events.append('step done')
-
-    async def watcher() -> None:
-        await rosys.sleep(0.3)
-        raise ValueError('watcher broke')
-
-    automator.start(rosys.automation.parallelize(timeout(), step(), watcher(), return_when_first_completed=True))
-    await forward(seconds=3.0, fail_on_automation_failure=False)
-
-    assert events == ['timeout done', 'step done']
+    assert events == ['timeout done', 'step done', 'cleanup started', 'cleanup finished']
     assert isinstance(automator.last_exception, ValueError)
 
 
