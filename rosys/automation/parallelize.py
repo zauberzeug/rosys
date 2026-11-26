@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Coroutine
 
-from .automation import AutomationStopped, in_uninterruptible_section
+from .automation import AutomationStopped, uninterruptible_depth
 
 
 class parallelize:
@@ -13,7 +13,8 @@ class parallelize:
 
     Note that ``parallelize`` will be uninterruptible if one of its coroutines is marked with ``@rosys.automation.uninterruptible``.
     This also holds for ``return_when_first_completed``: the remaining coroutines are only stopped
-    once no coroutine is inside an uninterruptible section anymore.
+    once none of them is inside an uninterruptible section anymore.
+    A section the caller itself is in does not hold the stop back.
     """
 
     def __init__(self, *coros: Coroutine, return_when_first_completed: bool = False) -> None:
@@ -31,11 +32,16 @@ class parallelize:
         cancelling = False  # whether a cancellation is being drained through the unfinished coroutines
         stop_when_interruptible = False  # a first-completed stop, held back by an uninterruptible section
         exception_to_reraise: list[BaseException] = []  # holds the external stop to re-raise once draining is done
+        outer_depth = uninterruptible_depth()  # sections the caller is in do not belong to the coroutines
+
+        def in_uninterruptible_section() -> bool:
+            return uninterruptible_depth() > outer_depth
 
         def cancel_unfinished(exception: BaseException, *, propagate: bool) -> None:
             """Inject *exception* into every unfinished coroutine so its cleanup (incl. ``await``) runs."""
-            nonlocal cancelling
+            nonlocal cancelling, stop_when_interruptible
             cancelling = True
+            stop_when_interruptible = False  # a cancellation supersedes a held-back stop
             if propagate and not exception_to_reraise:
                 exception_to_reraise.append(exception)
             for i, is_completed in enumerate(completed):

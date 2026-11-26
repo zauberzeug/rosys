@@ -81,6 +81,65 @@ async def test_first_completed_waits_for_an_uninterruptible_sibling(automator: A
     await forward(seconds=3.0)
 
     assert events == ['quick done', 'slow done']
+    assert automator.is_stopped
+
+
+async def test_first_completed_inside_an_uninterruptible_caller(automator: Automator):
+    """A section the caller is in must not hold the first-completed stop back."""
+    events: list[str] = []
+
+    async def bounded() -> None:
+        await rosys.sleep(0.2)
+        events.append('bounded done')
+
+    async def watcher() -> None:
+        try:
+            while True:
+                await rosys.sleep(0.1)
+        finally:
+            events.append('watcher stopped')
+
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.automation.parallelize(bounded(), watcher(), return_when_first_completed=True)
+        events.append('step done')
+
+    automator.start(step())
+    await forward(seconds=3.0)
+
+    assert events == ['bounded done', 'watcher stopped', 'step done']
+    assert automator.is_stopped
+
+
+async def test_stopping_while_first_completed_waits_for_an_uninterruptible_sibling(automator: Automator):
+    """An external stop during the held-back phase must not be injected a second time into a sibling's cleanup."""
+    events: list[str] = []
+
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+        events.append('quick done')
+
+    @rosys.automation.uninterruptible
+    async def slow() -> None:
+        await rosys.sleep(1.0)
+        events.append('slow done')
+
+    async def third() -> None:
+        try:
+            while True:
+                await rosys.sleep(0.1)
+        finally:
+            events.append('third cleanup started')
+            await rosys.sleep(0.5)
+            events.append('third cleanup finished')
+
+    automator.start(rosys.automation.parallelize(quick(), slow(), third(), return_when_first_completed=True))
+    await forward(seconds=0.5)
+    automator.stop(because='test')
+    await forward(seconds=3.0)
+
+    assert events == ['quick done', 'slow done', 'third cleanup started', 'third cleanup finished']
+    assert automator.is_stopped
 
 
 async def test_finally_block(automator: Automator):
