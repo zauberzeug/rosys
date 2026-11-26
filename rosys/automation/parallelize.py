@@ -13,8 +13,8 @@ class parallelize:
 
     Note that ``parallelize`` will be uninterruptible if one of its coroutines is marked with ``@rosys.automation.uninterruptible``.
     This also holds for ``return_when_first_completed`` and for a failing coroutine: the remaining coroutines are only
-    stopped (and a failure re-raised) once none of them is inside an uninterruptible section anymore.
-    A section the caller itself is in does not hold the stop back.
+    stopped (and a failure re-raised) once the automation has left every uninterruptible section it entered after
+    ``parallelize`` started. A section the caller itself was already in does not hold the stop back.
     """
 
     def __init__(self, *coros: Coroutine, return_when_first_completed: bool = False) -> None:
@@ -31,7 +31,8 @@ class parallelize:
         waiting: list[asyncio.Future | asyncio.Task | None] = [None for _ in sends]
         cancelling = False  # whether a cancellation is being drained through the unfinished coroutines
         stop_when_interruptible = False  # a first-completed stop or a failure, held back by an uninterruptible section
-        exception_to_reraise: list[BaseException] = []  # holds the external stop to re-raise once draining is done
+        # the external stop or a held-back failure to re-raise once draining is done
+        exception_to_reraise: list[BaseException] = []
         outer_depth = _uninterruptible_depth()  # sections the caller is in do not belong to the coroutines
 
         def in_uninterruptible_section() -> bool:
@@ -115,7 +116,7 @@ class parallelize:
                             cancel_unfinished(e, propagate=True)
 
             if exception_to_reraise:
-                # re-raise the external stop now that every coroutine has cleaned up
+                # re-raise the external stop or the held-back failure now that every coroutine has cleaned up
                 raise exception_to_reraise[0]
         finally:
             # Close any coroutine that never cleaned up (e.g. a GeneratorExit aborted the draining)
