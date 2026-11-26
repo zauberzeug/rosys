@@ -200,7 +200,7 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware,
 
 async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardFirmware,
                                                         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Flashing a Core that never got ready leaves its version known, so flashing the P0 is not refused for it."""
+    """Flashing a Core that never got ready leaves its version known."""
     communication = lizard_firmware.robot_brain.communication
     assert isinstance(communication, VersionCommunicationSimulation)
     communication.core_answers_pin_queries = True
@@ -216,8 +216,17 @@ async def test_flash_core_reads_version_of_unready_core(lizard_firmware: LizardF
     assert task.exception() is None
     assert not lizard_firmware.robot_brain.is_ready
     assert lizard_firmware.core_version == '0.13.0'
-    with pytest.raises(FirmwareFlashError, match='not ready'):
-        await lizard_firmware.flash_p0()
+
+
+async def test_flash_p0_refuses_unready_robot_brain_without_reading_version(lizard_firmware: LizardFirmware) -> None:
+    """An unready Robot Brain fails the flash at once instead of waiting for the Core's version first."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    assert not lizard_firmware.robot_brain.is_ready
+    task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
+    await forward(until=task.done)
+    assert 'not ready' in str(task.exception())
+    assert 'core.version()' not in communication.sent
 
 
 async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFirmware) -> None:
@@ -225,7 +234,6 @@ async def test_flash_p0_fails_when_p0_does_not_answer(lizard_firmware: LizardFir
     communication = lizard_firmware.robot_brain.communication
     assert isinstance(communication, VersionCommunicationSimulation)
     await connect(communication)
-    lizard_firmware.core_project, lizard_firmware.core_version = 'lizard', '0.13.0'
     task = background_tasks.create(lizard_firmware.flash_p0(), name='flash p0')
     await forward(seconds=3.0)
     assert isinstance(task.exception(), FirmwareFlashError)
