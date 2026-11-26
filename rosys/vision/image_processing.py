@@ -57,11 +57,14 @@ def encode_image_as_jpeg(image: np.ndarray, quality: int = DEFAULT_JPEG_QUALITY)
 
 
 def decode_jpeg_image(jpeg_bytes: bytes) -> ImageArray | None:
-    """Decode JPEG bytes to NumPy array using TurboJPEG if available, otherwise PIL. Returns None if decoding failed."""
+    """Decode JPEG bytes to a three-channel NumPy array via TurboJPEG or PIL. Returns None if decoding failed."""
     try:
         if TURBO_JPEG is not None:
             return TURBO_JPEG.decode(jpeg_bytes)
-        return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
+        array = np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
+        if array.ndim == 2:
+            array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
+        return array
     except (PIL.UnidentifiedImageError, OSError) as e:
         logging.warning('Failed to decode JPEG image %s', e)
         return None

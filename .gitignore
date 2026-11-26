@@ -8,3 +8,5 @@ detector/
 site/
 .nicegui/
 test.py
+
+.mypy_cache

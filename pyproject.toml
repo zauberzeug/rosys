@@ -5,10 +5,10 @@ description = "Modular Robot System With Elegant Automation Capabilities"
 authors = [{ name = "Zauberzeug GmbH", email = "info@zauberzeug.com" }]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11, <3.14"
+requires-python = ">=3.11, <3.16"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 dependencies = [
-    "nicegui>=3.13.0,<4",
+    "nicegui>=4.0.0,<5",
     "pyserial>=3.5,<4",
     "numpy<3.0.0",
     "scipy>=1.7.2,<2",
@@ -22,7 +22,7 @@ dependencies = [
     "uvloop>=0.17.0",
     "dataclasses-json>=0.5.7,<0.6",
     "suntime>=1.2.5,<2",
-    "line-profiler>=4.1.3,<5",
+    "line-profiler>=4.1.3,<6",
     "yappi>=1.6.0,<2",
     "pyloot>=0.1.0,<0.2",
     "objgraph>=3.6.1,<4",
@@ -32,23 +32,25 @@ dependencies = [
     "matplotlib>=3.7.2,<4",
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",
-    "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
-    "pillow>=12.3.0",  # https://github.com/zauberzeug/rosys/security/dependabot/148
-    "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
+    "cairosvg>=2.9.1,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/164
+    "pillow>=13.0.0",  # https://github.com/zauberzeug/rosys/security/dependabot/215
     "idna>=3.15",  # https://github.com/zauberzeug/rosys/security/dependabot/122
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
-    "urllib3>=2.7.0",  # https://github.com/zauberzeug/rosys/security/dependabot/118
+    "certifi>=2026.10.19",  # https://github.com/zauberzeug/rosys/security/dependabot/168, for httpx and requests
+    "urllib3>=2.8.0",  # https://github.com/zauberzeug/rosys/security/dependabot/158
     "python-multipart>=0.0.31",  # https://github.com/zauberzeug/rosys/security/dependabot/130
     "python-engineio>=4.13.2",  # https://github.com/zauberzeug/rosys/security/dependabot/132
     "python-socketio>=5.16.2",  # https://github.com/zauberzeug/rosys/security/dependabot/134
     "starlette>=1.0.1",  # https://github.com/zauberzeug/rosys/security/dependabot/126
-    "aiohttp>=3.14.3",  # https://github.com/zauberzeug/rosys/security/dependabot/152
-    "webob>=1.8.10",  # https://github.com/zauberzeug/rosys/security/dependabot/125
+    "aiohttp>=3.14.4",  # https://github.com/zauberzeug/rosys/security/dependabot/167
+    "webob>=1.8.11",  # https://github.com/zauberzeug/rosys/security/dependabot/154
+    "anyio>=4.14.2",  # https://github.com/zauberzeug/rosys/security/dependabot/156
+    "multidict>=6.9.1",  # https://github.com/zauberzeug/rosys/security/dependabot/163
     "fonttools>=4.60.2,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/74
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
-    "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
-    "mcap>=1.1.0,<2",
+    "virtualenv>=21.14.9",  # https://github.com/zauberzeug/rosys/security/dependabot/223
+    "mcap>=1.6.0,<2",
     "zstandard>=0.23.0",  # imported directly in analysis/recording/indexing.py (also a transitive dep of mcap)
 ]
 
@@ -62,7 +64,7 @@ rosys = "rosys.testing.fixtures"
 dev = [
     {include-group = "types"},
     "autopep8>=2.0.0,<3",
-    "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
+    "pytest>=9.1.0,<10",  # 9.1 captures non-propagating loggers like rosys.*
     "pytest-watch>=4.2.0,<5",
     "pytest-flakefinder>=1.0.0,<2",
     "pytest-profiling>=1.7.0,<2",
@@ -72,9 +74,9 @@ dev = [
     "cryptography>=50.0.0",  # https://github.com/zauberzeug/rosys/security/dependabot/153
     "sh>=2.2.4,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/135
     "mypy[faster-cache]>=1.15.0,<2.0.0",
-    "pylint>=3.2.5,<4",
+    "pylint>=4.0.9,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/226
     "pre-commit>=4.0.1,<5",
-    "filelock>=3.20.3,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/96
+    "filelock>=4.2.1,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/225
     "poetry-dynamic-versioning>=1.8.0,<2",
 ]
 types = [
@@ -95,7 +97,7 @@ docs = [
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-section-index",
-    "black",
+    "black>=26.10.1",  # https://github.com/zauberzeug/rosys/security/dependabot/211
 ]
 
 [build-system]
@@ -159,6 +161,7 @@ disable = [
     "C0111", # Missing docstring (in function/class/method)
     "C0301", # Line too long (exceeds character limit)
     "R0801", # Similar lines in %s files
+    "R0901", # Too many ancestors
     "R0902", # Too many public methods
     "R0903", # Too few public methods
     "R0904", # Too many public methods

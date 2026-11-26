@@ -1,8 +1,12 @@
+import io
+from unittest.mock import patch
+
 import numpy as np
 import PIL.Image
 import pytest
 
 from rosys.vision import Image, ImageSize
+from rosys.vision.image_processing import decode_jpeg_image
 
 
 def test_image_size_tuple():
@@ -68,3 +72,12 @@ def test_image_from_jpeg_bytes():
 
     invalid_byte = b'\xff\xd8\xff\xdb\x00C\x00\x03\x02\x02\x02\x02\x02\x03\x02\x02\x02\x03\x03\x03\x03\x04\x06\x04\x04\x04\x04\x04\x08\x06\x06\x05\x06\t\x08\n\n\t\x08\t\t\n\x0c\x0f\x0c\n\x0b\x0e\x0b\t\t\r\x11\r\x0e\x0f\x10\x10\x11\x10\n\x0c\x12\x13\x12\x10\x13\x0f\x10\x10\x10\xff\xc9\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xcc\x00\x06\x00\x10\x10\x05\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xd2\xcf \xff\xd8'
     assert Image.from_jpeg_bytes(invalid_byte) is None
+
+
+def test_decodes_grayscale_jpeg_to_three_channels_without_turbojpeg() -> None:
+    buffer = io.BytesIO()
+    PIL.Image.fromarray(np.zeros((8, 6), dtype=np.uint8), mode='L').save(buffer, format='JPEG')
+    with patch('rosys.vision.image_processing.TURBO_JPEG', None):
+        array = decode_jpeg_image(buffer.getvalue())
+    assert array is not None
+    assert array.shape == (8, 6, 3)

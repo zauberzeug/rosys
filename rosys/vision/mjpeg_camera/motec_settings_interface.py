@@ -61,8 +61,6 @@ class MotecSettingsInterface:
         self.cooldown = 0.2
         self.cooldown_time = 0.0
 
-        self.event_loop = asyncio.get_event_loop()
-
     def _construct_message(self, command_id: int, value_id: int, values: list[int]) -> bytes:
         n_value_bytes = len(values)
         if n_value_bytes > 6:
@@ -90,7 +88,7 @@ class MotecSettingsInterface:
         values = struct.unpack('B' * n_receive_bytes, data)[6:]
         self.log.debug('Received message [get]: %s', values)
 
-        self.cooldown_time = self.event_loop.time() + self.cooldown
+        self.cooldown_time = asyncio.get_running_loop().time() + self.cooldown
 
         return bytearray(values)
 
@@ -104,7 +102,7 @@ class MotecSettingsInterface:
         async with AsyncTcpClient(ip=self.ip, port=self.port) as client:
             await client.write(message)
 
-        self.cooldown_time = asyncio.get_event_loop().time() + self.cooldown
+        self.cooldown_time = asyncio.get_running_loop().time() + self.cooldown
 
     async def get_fps(self) -> int:
         return (await self._get_value(178))[0]

@@ -15,7 +15,7 @@ from rosys.rosys import shutdown_handlers
 @pytest.fixture
 async def rosys_lifecycle():
     # NOTE: for tests that drive rosys.startup()/rosys.shutdown() themselves, unlike rosys_integration
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     yield
     rosys.reset_after_test()
@@ -67,6 +67,24 @@ async def test_a_handler_removed_during_shutdown_does_not_skip_another_handler()
     await rosys.startup()
     await rosys.shutdown()
     assert calls == ['victim', 'dropper', 'last']
+
+
+@pytest.mark.usefixtures('rosys_lifecycle')
+async def test_a_raising_handler_does_not_skip_another_handler():
+    calls: list[str] = []
+
+    async def failing() -> None:
+        calls.append('failing')
+        raise RuntimeError('cannot shut down cleanly')
+
+    def last() -> None:
+        calls.append('last')
+
+    rosys.on_shutdown(failing)
+    rosys.on_shutdown(last)
+    await rosys.startup()
+    await rosys.shutdown()
+    assert calls == ['failing', 'last']
 
 
 @pytest.mark.usefixtures('rosys_integration')

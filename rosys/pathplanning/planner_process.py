@@ -1,6 +1,5 @@
 import abc
 import logging
-import multiprocessing
 import uuid
 from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
@@ -11,9 +10,6 @@ from ..geometry import Point, Pose, Spline
 from .area import Area
 from .delaunay_planner import DelaunayPlanner
 from .obstacle_map import Obstacle
-
-# spawn, not fork (which is broken for Python), regardless of the global start method (#19)
-SPAWN_CONTEXT = multiprocessing.get_context('spawn')
 
 
 @dataclass

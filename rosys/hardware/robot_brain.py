@@ -1,15 +1,22 @@
 import asyncio
 import logging
-from collections import deque
+from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable, Mapping
+from itertools import pairwise
 
 from nicegui import Event, ui
 
 from .. import rosys
 from .communication import Communication
 from .esp_pins import EspPins
-from .lizard_firmware import LizardFirmware
+from .lizard_firmware import FirmwareFlashError, LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
+MAX_CONFIGURE_ATTEMPTS = 3
+STARTUP_CHECKSUM_TIMEOUT = 15.0  # seconds to wait for the restarted Core to answer the checksum readback
+LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
+LOOP_PERIOD_HISTORY_LENGTH = 10_000  # bounds the window even if the core timestamps stop advancing
+CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown
 
 
 class RobotBrain:
@@ -21,13 +28,19 @@ class RobotBrain:
     It also keeps track of the clock offset between the microcontroller and the host system, which is used to synchronize the hardware time with the system time.
     The clock offset is calculated by comparing the hardware time with the system time and averaging the differences over a number of samples.
     If the offset changes significantly, a notification is sent and the offset history is cleared.
+
+    Lizard prints one core message per iteration of its main loop, so the spacing of their hardware timestamps
+    is the loop period. ``get_mean_loop_period()`` and ``get_max_loop_period()`` compute the statistics over a sliding
+    window of ``LOOP_PERIOD_WINDOW`` seconds and the developer UI shows them; a loop that keeps missing its 10 ms
+    deadline is overloaded.
+    A lost line, whether dropped on the wire or by a stalled host, shows up as an outlier in the maximum only.
     """
 
     def __init__(self, communication: Communication, *,
                  enable_esp_on_startup: bool = True,
                  use_espresso: bool = False,
                  heartbeat_interval: float | None = None,
-                 supported_lizard_versions: str | None = None) -> None:
+                 supported_lizard_versions: Mapping[str, str] | None = None) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -35,9 +48,10 @@ class RobotBrain:
         :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
         :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
         :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
-        :param supported_lizard_versions: PEP 440 version specifier restricting which Lizard versions can be
-            downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
-        :raises InvalidSpecifier: When ``supported_lizard_versions`` is not a valid version specifier
+        :param supported_lizard_versions: PEP 440 version specifier per firmware project restricting what can be
+            downloaded and flashed, e.g. ``{'lizard': '<0.14.0'}``; a project not listed is refused
+            (default: ``None``, every project and version is supported)
+        :raises InvalidSpecifier: When a specifier is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""
@@ -56,10 +70,13 @@ class RobotBrain:
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
+        self._ack_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
-        self._use_espresso = use_espresso
+        self._core_times: deque[float] = deque(maxlen=LOOP_PERIOD_HISTORY_LENGTH)
+        self._last_core_message_time: float | None = None
+        self.use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
         if heartbeat_interval is not None:
@@ -82,6 +99,30 @@ class RobotBrain:
     def is_ready(self) -> bool:
         return self._hardware_time is not None
 
+    def get_mean_loop_period(self) -> float | None:
+        """Compute the mean period of Lizard's main loop over the last seconds, in seconds.
+
+        ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+        """
+        if not self._has_recent_core_messages():
+            return None
+        return (self._core_times[-1] - self._core_times[0]) / (len(self._core_times) - 1)
+
+    def get_max_loop_period(self) -> float | None:
+        """Compute the longest period of Lizard's main loop over the last seconds, in seconds.
+
+        ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+        Walks over all timestamps of the window, so call it at UI pace rather than in a tight loop.
+        """
+        if not self._has_recent_core_messages():
+            return None
+        return max(b - a for a, b in pairwise(self._core_times))
+
+    def _has_recent_core_messages(self) -> bool:
+        return (len(self._core_times) >= 2
+                and self._last_core_message_time is not None
+                and rosys.time() - self._last_core_message_time < CORE_MESSAGE_TIMEOUT)
+
     def developer_ui(self) -> None:
         version_select: ui.select
 
@@ -91,44 +132,49 @@ class RobotBrain:
             if version_select.options:
                 version_select.value = version_select.options[0]
 
-        async def online_update() -> None:
-            await self.lizard_firmware.download()
-            await self.lizard_firmware.flash_core()
-            await self.restart()
-            await self.configure()
-            await self.lizard_firmware.flash_p0()
+        async def notify_failure(flash: Callable[[], Awaitable[None]]) -> None:
+            try:
+                await flash()
+            except FirmwareFlashError as e:
+                rosys.notify(str(e), 'negative')
 
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
             await self.restart()
-            await self.configure()
+            if not await self.configure():
+                return
             await self.lizard_firmware.flash_p0()
+
+        async def online_update() -> None:
+            await self.lizard_firmware.download()
+            await local_update()
 
         with ui.row().classes('items-center'):
             version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
                 .bind_value_to(self.lizard_firmware, 'selected_online_version')
             ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
                 .tooltip('Read all available versions from GitHub')
-            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
+            online_update_button = ui.button(on_click=lambda: notify_failure(online_update)).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
-            local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
+            ui.label().bind_text_from(self.lizard_firmware, 'local_description', backward=lambda x: f'Local: {x}')
+            local_update_button = ui.button(on_click=lambda: notify_failure(local_update)).props('icon=file_download flat round dense') \
                 .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'core_description', backward=lambda x: f'Core: {x}')
             configure_button = ui.button(on_click=self.configure).props('icon=build flat round dense') \
                 .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'p0_description', backward=lambda x: f'P0: {x}')
+        ui.label().bind_text_from(self.lizard_firmware, 'progress')
 
         def update_visibility() -> None:
             online_update_button.visible = \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
             local_update_button.visible = \
-                self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
-                self.lizard_firmware.local_version != self.lizard_firmware.p0_version
+                self.lizard_firmware.local_description != self.lizard_firmware.core_description or \
+                self.lizard_firmware.local_description != self.lizard_firmware.p0_description
             configure_button.visible = self.lizard_firmware.checksums_match is False
         ui.timer(1.0, update_visibility)
 
@@ -144,14 +190,14 @@ class RobotBrain:
                         ui.notify(await self.esp_pins_core.get_strapping_pins())
                     ui.menu_item('Check Core Strapping Pins', on_click=check_strapping_pins_core) \
                         .tooltip('Check if the Core strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
+                    ui.menu_item('Flash Core', on_click=lambda: notify_failure(self.lizard_firmware.flash_core)) \
                         .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
 
                     async def check_strapping_pins_p0():
                         ui.notify(await self.esp_pins_p0.get_strapping_pins())
                     ui.menu_item('Check P0 Strapping Pins', on_click=check_strapping_pins_p0) \
                         .tooltip('Check if the P0 strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
+                    ui.menu_item('Flash P0', on_click=lambda: notify_failure(self.lizard_firmware.flash_p0)) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
 
                     ui.separator()
@@ -173,6 +219,13 @@ class RobotBrain:
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
         ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
+        mean_loop_period_label = ui.label()
+        max_loop_period_label = ui.label()
+
+        def update_loop_period() -> None:
+            mean_loop_period_label.text = f'Mean loop period: {_format_ms(self.get_mean_loop_period())}'
+            max_loop_period_label.text = f'Max loop period: {_format_ms(self.get_max_loop_period())}'
+        ui.timer(1.0, update_loop_period)
 
     async def send_heartbeat(self) -> None:
         """Send a ``core.keep_alive()`` command to the microcontroller to let it know that RoSys is still running."""
@@ -181,14 +234,64 @@ class RobotBrain:
             return
         await self.send('core.keep_alive()')
 
-    async def configure(self) -> None:
+    async def configure(self) -> bool:
+        """Write the Lizard startup script to the microcontroller and restart it.
+
+        The transferred script is verified before it is persisted, so a lossy connection
+        cannot leave a corrupt script in the microcontroller's storage.
+        Because the persist command itself is not acknowledged, the persisted script is verified once more
+        after the restart; this also catches a Core that boots silently because its stored script is broken.
+
+        :return: whether the script was transferred, persisted and verified
+        """
         rosys.notify('Configuring Lizard...')
-        await self.send('!-', force=True)
-        for line in self.lizard_code.splitlines():
-            await self.send(f'!+{line}', force=True)
+        self.lizard_firmware.read_local_checksum()
+        await self.read_startup_checksum(timeout=1.0, force=True)  # drain any stale checksum: response
+        for _ in range(MAX_CONFIGURE_ATTEMPTS):
+            await self.send('!-', force=True)
+            for line in self.lizard_code.splitlines():
+                await self.send(f'!+{line}', force=True)
+            checksum = await self.read_startup_checksum(timeout=3.0, force=True)
+            if checksum == self.lizard_firmware.local_checksum:
+                break
+        else:
+            rosys.notify(f'Configuring Lizard failed: {self._describe_checksum(checksum)}.',
+                         'negative', log_level=logging.ERROR)
+            # NOTE: restart to reload the persisted script into RAM; otherwise core.startup_checksum() would keep
+            # reporting the unpersisted upload and the startup check could show a false "checksums match"
+            await self.restart()
+            return False
         await self.send('!.', force=True)
         await self.restart()
+        # NOTE: the Core answers direct commands even if its startup script fails, so this works for a silent Core
+        checksum = None
+        deadline = rosys.time() + STARTUP_CHECKSUM_TIMEOUT
+        while checksum is None and rosys.time() < deadline:
+            checksum = await self.read_startup_checksum(timeout=1.0, force=True)
+        if checksum != self.lizard_firmware.local_checksum:
+            rosys.notify(f'Verifying the persisted Lizard script failed: {self._describe_checksum(checksum)}.',
+                         'negative', log_level=logging.ERROR)
+            return False
         rosys.notify('Lizard configured successfully.', 'positive')
+        return True
+
+    def _describe_checksum(self, checksum: str | None) -> str:
+        if checksum is None:
+            return 'no checksum received'
+        return f'checksum mismatch ({checksum} instead of {self.lizard_firmware.local_checksum})'
+
+    async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
+        """Read the checksum of the startup script that the microcontroller currently holds.
+
+        :param timeout: Response timeout
+        :param force: Whether to send the message even if the ESP is not ready
+        :return: The checksum, or ``None`` if the timeout is reached or the ESP is not ready
+        """
+        try:
+            response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=timeout, force=force)
+        except EspNotReadyException:
+            return None
+        return response.split()[-1] if response else None
 
     async def restart(self) -> None:
         await self.send('core.restart()', force=True)
@@ -218,6 +321,7 @@ class RobotBrain:
             hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
+                self._record_core_time(millis / 1000)
                 self.CORE_MESSAGE_RECEIVED.emit(millis)
                 if self.clock_offset is None:
                     continue
@@ -245,6 +349,18 @@ class RobotBrain:
         if self.lizard_firmware.checksums_match is False:
             rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
+    def _record_core_time(self, core_time: float) -> None:
+        now = rosys.time()
+        restarted = bool(self._core_times) and core_time < self._core_times[-1]
+        resumed = (self._last_core_message_time is not None
+                   and now - self._last_core_message_time >= CORE_MESSAGE_TIMEOUT)
+        if restarted or resumed:  # NOTE: a gap in the stream, e.g. a host-side stall, is not a long period
+            self._core_times.clear()
+        self._core_times.append(core_time)
+        while self._core_times[0] < core_time - LOOP_PERIOD_WINDOW:
+            self._core_times.popleft()
+        self._last_core_message_time = now
+
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
             self.log.info('Clock offset changed from %.3f to %.3f', self._clock_offset, offset)
@@ -263,29 +379,33 @@ class RobotBrain:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force: bool = False) -> str | None:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Send a Lizard command to the ESP and await a response.
+
+        Responses carry no request id, so calls that share an ``ack`` are serialized:
+        a call first waits for earlier calls with the same ``ack`` to receive their response or time out.
+        The timeout must be finite, because an unanswered request would otherwise block
+        all later calls with that ``ack``.
 
         :param msg: The Lizard command to send
         :param ack: The first word of the response message to wait for
-        :param timeout: Response timeout
+        :param timeout: Response timeout, counted from sending
         :param force: Whether to send the message even if the ESP is not ready
         :raises EspNotReadyException: When the ESP is not ready and force is ``False``
         :return: The response message or ``None`` if the timeout is reached
         """
-        if not self.is_ready and not force:
-            raise EspNotReadyException('Sending message failed because ESP is not ready')
-        self.waiting_list[ack] = None
-        await self.send(msg, force=force)
-        t0 = rosys.time()
-        while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
-            await rosys.sleep(0.1)
-        return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+        async with self._ack_locks[ack]:
+            self.waiting_list[ack] = None
+            await self.send(msg, force=force)
+            t0 = rosys.time()
+            while self.waiting_list[ack] is None and rosys.time() < t0 + timeout:
+                await rosys.sleep(0.1)
+            return self.waiting_list.pop(ack)
 
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._enable_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "
@@ -333,7 +453,7 @@ class RobotBrain:
     async def reset_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._reset_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "
@@ -396,3 +516,7 @@ def check(line: str | None) -> str:
     if checksum != check_:
         return ''
     return line
+
+
+def _format_ms(seconds: float | None) -> str:
+    return '-' if seconds is None else f'{seconds * 1000:.0f} ms'

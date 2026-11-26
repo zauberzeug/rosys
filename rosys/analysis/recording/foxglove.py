@@ -11,15 +11,17 @@ lives in :mod:`.converters`.
 from __future__ import annotations
 
 import base64
+import dataclasses
+import logging
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
-from ...geometry import Pose, Velocity
+from ...geometry import Pose, Pose3d, Rotation, Velocity
 from ...hardware.bms_state import BmsState
 from ...hardware.gnss.gnss import GnssMeasurement
 from ...hardware.imu import ImuMeasurement
-from ...vision import DEFAULT_JPEG_QUALITY, CalibratableCamera, Image, validate_jpeg_quality
+from ...vision import DEFAULT_JPEG_QUALITY, CalibratableCamera, Detections, Image, validate_jpeg_quality
 from .converters import Converter, add_event_topic, custom_message, register
 from .mcap_recorder import NANOSECONDS_PER_SECOND, McapRecorder
 
@@ -93,7 +95,7 @@ def pose_in_frame(*, frame: str = 'map', extract: Callable[[Any], Any] | None = 
                      'orientation': _quaternion_from_yaw(pose.yaw)},
         }
 
-    return custom_message('foxglove.PoseInFrame', schema, build, sample=extract)
+    return custom_message('foxglove.PoseInFrame', schema, build, sample=_pose_snapshot(extract))
 
 
 def frame_transform(*, child: str, parent: str = 'map',
@@ -118,7 +120,7 @@ def frame_transform(*, child: str, parent: str = 'map',
             'rotation': _quaternion_from_yaw(pose.yaw),
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=_pose_snapshot(extract))
 
 
 def transform_3d(*, child: str, parent: str = 'base_link',
@@ -144,7 +146,25 @@ def transform_3d(*, child: str, parent: str = 'base_link',
             'rotation': {'x': x, 'y': y, 'z': z, 'w': w},
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=_pose3d_snapshot(extract))
+
+
+def _pose_snapshot(extract: Callable[[Any], Any] | None) -> Callable[[Any], Pose | None]:
+    """A ``sample`` copying the (extracted) pose, so a pose mutated after the event is recorded as it was."""
+    def sample(payload: Any) -> Pose | None:
+        pose = payload if extract is None else extract(payload)
+        return None if pose is None else Pose(x=pose.x, y=pose.y, yaw=pose.yaw)
+    return sample
+
+
+def _pose3d_snapshot(extract: Callable[[Any], Any] | None) -> Callable[[Any], Pose3d | None]:
+    """A ``sample`` copying the (extracted) 3D pose; a ``Frame3d`` has to stay one object, so it is always mutated."""
+    def sample(payload: Any) -> Pose3d | None:
+        pose = payload if extract is None else extract(payload)
+        if pose is None:
+            return None
+        return Pose3d(x=pose.x, y=pose.y, z=pose.z, rotation=Rotation(R=[list(row) for row in pose.rotation.R]))
+    return sample
 
 
 # --------------------------------------------------------------------------- #
@@ -300,7 +320,12 @@ def battery_state(*, frame: str = 'battery') -> Converter:
             'cell_voltage': [], 'cell_temperature': [], 'location': '', 'serial_number': '',
         }
 
-    return custom_message('sensor_msgs/msg/BatteryState', schema, build)
+    return custom_message('sensor_msgs/msg/BatteryState', schema, build, sample=_battery_snapshot)
+
+
+def _battery_snapshot(state: BmsState) -> BmsState:
+    """A copy of the state; ``Bms`` updates its one state object in place."""
+    return dataclasses.replace(state)
 
 
 # --------------------------------------------------------------------------- #
@@ -392,14 +417,17 @@ def image_annotations(*, camera_id: str | None = None, thickness: float = 2.0) -
         },
     }
 
-    def build(image: Image, timestamp_ns: int) -> dict | None:
+    def sample(image: Image) -> dict[str, Detections] | None:
         if camera_id is not None and image.camera_id != camera_id:
             return None
+        return dict(image.detections_by_detector_id)
+
+    def build(detections_by_detector_id: dict[str, Detections], timestamp_ns: int) -> dict:
         time = _foxglove_time(timestamp_ns)
         points: list[dict] = []
         circles: list[dict] = []
         texts: list[dict] = []
-        for detections in image.detections_by_detector_id.values():
+        for detections in detections_by_detector_id.values():
             for box in detections.boxes:
                 points.append(_line_loop(time, [
                     (box.x, box.y), (box.x + box.width, box.y),
@@ -411,7 +439,7 @@ def image_annotations(*, camera_id: str | None = None, thickness: float = 2.0) -
                 texts.append(_text(time, point.x, point.y, f'{point.category_name} ({point.confidence:.2f})'))
         return {'circles': circles, 'points': points, 'texts': texts}
 
-    return custom_message('foxglove.ImageAnnotations', schema, build)
+    return custom_message('foxglove.ImageAnnotations', schema, build, sample=sample)
 
 
 # --------------------------------------------------------------------------- #
@@ -441,6 +469,89 @@ def imu() -> Converter:
         }
 
     return custom_message('ImuMeasurement', schema, build)
+
+
+# --------------------------------------------------------------------------- #
+# Log messages
+# --------------------------------------------------------------------------- #
+
+_FOXGLOVE_LOG_LEVELS = ((logging.CRITICAL, 5), (logging.ERROR, 4), (logging.WARNING, 3),
+                        (logging.INFO, 2), (logging.DEBUG, 1))  # foxglove.LogLevel; anything below DEBUG is UNKNOWN
+
+
+class LogEntry(NamedTuple):
+    """One log line, taken off a :class:`logging.LogRecord` before it is queued.
+
+    The message is rendered where the line is logged, so the recording holds what the line
+    said at that moment rather than what its arguments hold once the writer gets to it.
+    """
+    level: int
+    message: str
+    name: str
+    file: str
+    line: int
+
+
+def log() -> Converter:
+    """``LogEntry`` -> ``foxglove.Log`` (what Foxglove's Logs panel renders)."""
+    schema = {
+        'type': 'object',
+        'properties': {
+            'timestamp': _TIME_SCHEMA, 'level': {'type': 'integer'}, 'message': {'type': 'string'},
+            'name': {'type': 'string'}, 'file': {'type': 'string'}, 'line': {'type': 'integer'},
+        },
+    }
+
+    def build(entry: LogEntry, timestamp_ns: int) -> dict:
+        return {'timestamp': _foxglove_time(timestamp_ns), 'level': entry.level, 'message': entry.message,
+                'name': entry.name, 'file': entry.file, 'line': entry.line}
+
+    return custom_message('foxglove.Log', schema, build)
+
+
+class McapLogHandler(logging.Handler):
+    """Writes what a logger logs into the recording, so a recording explains itself.
+
+    Attach it to the loggers whose lines belong in the recording, the recorder's own included,
+    but never to the root logger: every library logging anywhere would end up in the file.
+    Handling a record is a message render plus an enqueue — the JSON encoding runs on the
+    recorder's writer thread — and it happens wherever the line is logged, which may be any
+    thread.
+    """
+
+    def __init__(self, recorder: McapRecorder, topic: str = '/log') -> None:
+        """Register the log topic on ``recorder``.
+
+        :param recorder: the recorder the log lines are written to.
+        :param topic: the topic the lines are recorded on.
+        """
+        super().__init__()
+        self._recorder = recorder
+        self._topic = topic
+        self._converter = log()
+        recorder.add_topic(topic, self._converter.schema)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not self._recorder.accepts(self._topic):
+            return
+        try:
+            entry = LogEntry(_log_level(record.levelno), record.getMessage(),
+                             record.name, record.filename, record.lineno)
+            self._recorder.log_message(self._topic, entry, encode=self._converter.encode)
+        except Exception:
+            self.handleError(record)  # recording a log line must never break the logging it records
+
+
+def _log_level(levelno: int) -> int:
+    """Map a Python log level onto foxglove's.
+
+    :param levelno: the numeric level of the log record.
+    :return: the foxglove log level, ``0`` (UNKNOWN) for anything below DEBUG.
+    """
+    for threshold, level in _FOXGLOVE_LOG_LEVELS:
+        if levelno >= threshold:
+            return level
+    return 0
 
 
 # --------------------------------------------------------------------------- #

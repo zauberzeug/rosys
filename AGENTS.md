@@ -12,7 +12,8 @@ A few facts shape almost everything:
 - **Single asyncio event loop, built on NiceGUI.**
   Robot logic runs cooperatively on one loop — blocking it stalls the whole robot.
   Heavy work goes through `rosys.run.cpu_bound`/`io_bound`, and a few subsystems run their own process (e.g. path planning's `PlannerProcess`).
-  Any multiprocessing must use the `spawn` start method: RoSys sets it under `if __name__ == '__main__'` and **asserts** it at startup, so an imported app with the wrong method fails fast rather than being auto-corrected.
+  Those helpers are started from the shared `SPAWN_CONTEXT` in `rosys.helpers.spawning`; RoSys does not set or assert a global start method.
+  `spawn` re-imports the user's `__main__`, so a script that creates an `MjpegCamera` or `PathPlanner` at import time must guard its startup with `if __name__ == '__main__':`.
 - **Two brains.**
   Time-critical and safety-critical logic (motor control, E-stop, bump-stop) lives on the microcontroller as [Lizard](https://lizard.dev/) code (the "Robot Brain"); Python orchestrates and reacts.
   Python requests, the microcontroller decides.
@@ -36,8 +37,9 @@ A few facts shape almost everything:
   `rosys.on_startup` runs _after_ persisted state is restored (each `Persistable` restores itself when `.persistent()` is called), so configuring through `app.on_startup` lets the restored state overwrite whatever you set (see the README note).
   Note `on_repeat` waits one interval before its first call — it is not immediate.
 - **Don't block the loop:** wrap CPU-heavy work in `await rosys.run.cpu_bound(...)` and blocking I/O in `await rosys.run.io_bound(...)`.
-  Both return `R | None` — `None` when the app is shutting down or the call is cancelled, so guard the result.
-  `cpu_bound` runs in a _spawned_ subprocess, so its callback and arguments must be picklable (module-level functions, no closures or `self`).
+  Both raise `CancelledError` when the pools are already shut down, just as when the awaiting task is cancelled.
+  Within `rosys.on_shutdown` handlers the pools still run offloaded work, so a handler must not release what a running call still uses.
+  `cpu_bound` runs in a _spawned_ subprocess, so its callback and arguments must be picklable (module-level functions, no closures or `self`), and each worker re-imports the user's `__main__`.
 - **Events** are typed `Event[T]` with `.emit()` / `.subscribe()` (imported from `nicegui`, not defined in `rosys` — grepping the `rosys` package for `class Event` finds nothing); event names are `SCREAMING_SNAKE_CASE` (e.g. `VELOCITY_MEASURED`).
 
 ## Hardware modules: keep the Hardware/Simulation pair intact

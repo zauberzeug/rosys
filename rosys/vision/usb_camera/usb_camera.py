@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 
 from ... import rosys
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -14,6 +15,8 @@ from .usb_device import UsbDevice
 
 class UsbCamera(ConfigurableCamera, TransformableCamera):
 
+    @deprecated_param('width')
+    @deprecated_param('height', stacklevel=3)
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
@@ -21,23 +24,26 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  connect_after_init: bool = True,
                  auto_exposure: bool = True,
                  exposure: float = 0.01,
-                 width: int = 800,
-                 height: int = 600,
+                 resolution: tuple[int, int] = (800, 600),
+                 width: int | None = None,
+                 height: int | None = None,
                  fps: int = 10,
                  **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
+        self.log = logging.getLogger(f'rosys.vision.usb_camera.{self.id}')
         self._pending_operations = 0
         self.device: UsbDevice | None = None
         self.detect: bool = False
         self.color: str | None = None
 
-        self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
+        if width is not None or height is not None:
+            resolution = (width or resolution[0], height or resolution[1])
+        self._register_parameter('auto_exposure', self.get_auto_exposure, self.set_auto_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
-        self._register_parameter('width', self.get_width, self.set_width, width)
-        self._register_parameter('height', self.get_height, self.set_height, height)
+        self._register_parameter('resolution', self.get_resolution, self.set_resolution, resolution)
         self._register_parameter('fps', self.get_fps, self.set_fps, fps)
 
     def to_dict(self) -> dict[str, Any]:
@@ -45,38 +51,47 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             name: param.value for name, param in self._parameters.items()
         }
 
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        data = super().args_from_dict(data)
+        if 'width' in data and 'height' in data:
+            data['resolution'] = (data.pop('width'), data.pop('height'))
+        return data
+
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_connected
+
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
-        if device is None:
-            logging.warning('Connecting camera %s: failed', self.id)
-            return
-
-        self.device = device
-        logging.info('Connecting camera %s: succeeded', self.id)
-
-        await self._apply_all_parameters()
+        async with self._device_connection():
+            if self.device is not None:
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()
+            self.device = UsbDevice(self.id,
+                                    on_new_image_data=self._handle_new_image_data,
+                                    on_connect=self._apply_all_parameters,
+                                    reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
-            return
+        async with self._device_connection():
+            await self._tear_down_device()
 
-        assert self.device is not None
-        await self.device.release_capture()
+    async def _tear_down_device(self) -> None:
+        """Tear down the device. The caller must hold `device_connection_lock`."""
+        if self.device is None:
+            return
+        await self.device.shutdown()
         self.device = None
-        logging.info('camera %s: disconnected', self.id)
+        self.log.info('disconnected')
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return None
-
-        assert self.device is not None
 
         image_array: np.ndarray | None
         if isinstance(image_data, np.ndarray):
@@ -113,26 +128,22 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         return self.device.get_exposure()
 
-    def set_width(self, width: int) -> None:
+    def set_resolution(self, resolution: tuple[int, int]) -> None:
         assert self.device is not None
-        self.device.set_width(width)
+        self.device.set_width(resolution[0])
+        self.device.set_height(resolution[1])
 
-    def get_width(self) -> int:
+    def get_resolution(self) -> tuple[int, int] | None:
         assert self.device is not None
-        return self.device.get_width()
-
-    def set_height(self, height: int) -> None:
-        assert self.device is not None
-        self.device.set_height(height)
-
-    def get_height(self) -> int:
-        assert self.device is not None
-        return self.device.get_height()
+        width, height = self.device.get_width(), self.device.get_height()
+        if width is None or height is None:
+            return None
+        return (width, height)
 
     def set_fps(self, fps: int) -> None:
         assert self.device is not None
         self.device.set_fps(fps)
 
-    def get_fps(self) -> int:
+    def get_fps(self) -> int | None:
         assert self.device is not None
         return self.device.get_fps()

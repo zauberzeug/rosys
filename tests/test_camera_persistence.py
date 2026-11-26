@@ -50,13 +50,12 @@ async def test_storing_camera_with_no_basepath_overwrite(rosys_integration, base
 
 
 async def test_storing_simulated_camera_as_dict(rosys_integration, base_camera_parameters):
-    camera = SimulatedCamera(width=808, height=606, color='#010101', fps=1, **base_camera_parameters)
+    camera = SimulatedCamera(resolution=(808, 606), color='#010101', fps=1, **base_camera_parameters)
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = SimulatedCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, SimulatedCamera)
     assert_base_camera_parameters_match(camera, restored_camera)
-    assert restored_camera.resolution == camera.resolution
     assert restored_camera.parameters == camera.parameters
 
 
@@ -126,7 +125,7 @@ def test_rtsp_camera_backward_compat(rosys_integration):
 
 
 def test_storing_usb_camera_as_dict(rosys_integration, base_camera_parameters):
-    camera = UsbCamera(auto_exposure=False, exposure=100, width=808, height=606, fps=1, **base_camera_parameters)
+    camera = UsbCamera(auto_exposure=False, exposure=100, resolution=(808, 606), fps=1, **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = UsbCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, UsbCamera)

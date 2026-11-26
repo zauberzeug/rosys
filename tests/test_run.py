@@ -1,7 +1,13 @@
+import asyncio
+import threading
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+
+import nicegui.run
 import pytest
 
 from rosys import run, sleep
 from rosys.automation import Automator
+from rosys.helpers.spawning import SPAWN_CONTEXT
 from rosys.testing import forward
 
 
@@ -20,7 +26,7 @@ async def test_timeouts(automator: Automator):
     assert len(failures) == 0
 
     automator.start(run.wait_for(func, timeout=0.25))
-    await forward(seconds=2.0)
+    await forward(seconds=2.0, fail_on_automation_failure=False)
     assert automator.is_stopped
     assert len(failures) == 1
 
@@ -30,7 +36,7 @@ async def test_timeouts(automator: Automator):
     assert len(failures) == 1
 
     automator.start(run.retry(func, max_attempts=1, max_timeout=0.25))
-    await forward(seconds=2.0)
+    await forward(seconds=2.0, fail_on_automation_failure=False)
     assert automator.is_stopped
     assert len(failures) == 2
 
@@ -83,3 +89,27 @@ async def test_retry_failed_with_on_failed_and_args():
     assert events == ['call', 'failed 0/3',
                       'call', 'failed 1/3',
                       'call', 'failed 2/3']
+
+
+@pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
+async def test_a_call_refused_by_the_shut_down_pools_raises_cancelled_error(bound: str,
+                                                                            monkeypatch: pytest.MonkeyPatch):
+    pool = ThreadPoolExecutor() if bound == 'io_bound' else ProcessPoolExecutor(mp_context=SPAWN_CONTEXT)
+    pool.shutdown()
+    monkeypatch.setattr(nicegui.run, 'thread_pool' if bound == 'io_bound' else 'process_pool', pool)
+
+    with pytest.raises(asyncio.CancelledError):
+        await getattr(run, bound)(print)
+    assert not run.running_cpu_bound_processes
+
+
+async def test_cancelling_a_running_io_bound_call_does_not_wait_for_the_thread():
+    release = threading.Event()
+    task = asyncio.create_task(run.io_bound(release.wait))
+    await asyncio.sleep(0.01)
+    task.cancel()
+    try:
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    finally:
+        release.set()

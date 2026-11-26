@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from mcap.exceptions import McapError
 from mcap.reader import make_reader
-from mcap.records import Channel, Header, Message, Schema
+from mcap.records import Channel, Header, Message, Metadata, Schema
 from mcap.stream_reader import StreamReader
 from mcap.writer import CompressionType, Writer
 from zstandard import ZstdError
@@ -39,8 +39,8 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
     """Rewrite ``path`` in place with a summary index; return the recovered message count.
 
     Reads the file sequentially (tolerating a truncated tail from a crash) and
-    writes a fresh, indexed copy. Messages in the final unflushed chunk of a
-    crashed recording are unrecoverable.
+    writes a fresh, indexed copy, metadata records included. Messages in the final
+    unflushed chunk of a crashed recording are unrecoverable.
 
     Only read-side failures on the crashed tail are tolerated; any write-side
     failure (e.g. ENOSPC while the temp copy transiently doubles disk usage)
@@ -83,6 +83,8 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
                     channels[record.id] = writer.register_channel(
                         schema_id=schemas.get(record.schema_id, 0), topic=record.topic,
                         message_encoding=record.message_encoding, metadata=record.metadata)
+                elif isinstance(record, Metadata):
+                    writer.add_metadata(record.name, record.metadata)
                 elif isinstance(record, Message) and record.channel_id in channels:
                     writer.add_message(
                         channel_id=channels[record.channel_id], log_time=record.log_time,

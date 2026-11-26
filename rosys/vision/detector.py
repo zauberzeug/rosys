@@ -1,5 +1,6 @@
 import abc
 import logging
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -8,9 +9,11 @@ from uuid import uuid4
 
 from nicegui import Event
 
+from ..geometry import Polygon
 from .annotations import Annotations
 from .detections import Category, Detections
 from .image import Image
+from .image_masks import ImageMasks
 
 
 class Autoupload(Enum):
@@ -26,8 +29,38 @@ class Autoupload(Enum):
     """Upload mode where every processed image is uploaded"""
 
 
+class ImageState(Enum):
+    """Target state for an image when uploaded to the Learning Loop"""
+
+    BACKLOG = 'backlog'
+    INBOX = 'inbox'
+    ANNOTATE = 'annotate'
+    REVIEW = 'review'
+    COMPLETE = 'complete'
+    TRASH = 'trash'
+
+
+class ImageTransmissionFormat(Enum):
+    """How images are sent to a detector node"""
+
+    RAW = 'raw'
+    """The pixel array with dtype and shape: large, but lossless and nothing to encode; best on the same host"""
+
+    JPEG = 'jpeg'
+    """The image encoded as JPEG: lossy and takes time to encode, but much smaller; best over a (slow) network"""
+
+
 class DetectorException(Exception):
     """An exception that is raised by a detector."""
+
+
+@dataclass(slots=True, kw_only=True)
+class BatchImageMetadata:
+    """Metadata of one image in ``Detector.batch_detect``; its camera is always the image's own ``camera_id``."""
+
+    tags: list[str] = field(default_factory=list)
+    source: str | None = None
+    creation_date: datetime | str | None = None
 
 
 @dataclass(slots=True, kw_only=True)
@@ -85,10 +118,16 @@ class Detector(abc.ABC):
 
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
     like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
+
+    With ``masks`` image regions can be grayed out per camera id, given as polygons in normalized image coordinates
+    (x and y from 0 to 1, origin in the top-left corner, y pointing down).
+    Pixels inside these polygons are replaced by gray before they reach the detector;
+    this applies to detection and upload alike, while the images themselves stay untouched.
     """
 
-    def __init__(self, *, name: str | None = None) -> None:
+    def __init__(self, *, name: str | None = None, masks: Mapping[str, Iterable[Polygon]] | None = None) -> None:
         self.name = name or str(uuid4())
+        self.masks = ImageMasks(masks)
 
         self.NEW_DETECTIONS = Event[Image]()
         """detection on an image is completed (argument: image)"""
@@ -119,6 +158,26 @@ class Detector(abc.ABC):
         """
 
     @abc.abstractmethod
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None,
+                           ) -> list[Detections] | None:
+        """Runs detections on all images and fills each ``image.detections`` property.
+
+        Result order matches ``images``, and so must ``image_metadata``.
+
+        :param tags: tags of every image; an image's own tags are added
+        :param source: source of every image, unless the image sets its own
+        :param creation_date: creation date of every image, unless the image sets its own
+        :param image_metadata: one entry per image, see ``BatchImageMetadata``
+        """
+
+    @abc.abstractmethod
     async def upload(self,
                      image: Image,
                      *,
@@ -126,11 +185,16 @@ class Detector(abc.ABC):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      annotations: Annotations | None = None,
+                     state: ImageState | None = None,
                      ) -> None:
         """Uploads an image (and its annotations) to the Learning Loop.
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
+
+        The `state` determines which state the image enters the Learning Loop in,
+        for example ``ImageState.TRASH``.
+        If it is omitted, the Learning Loop applies its own default.
 
         :raises DetectorException: if the upload fails.
         """

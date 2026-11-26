@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import math
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from nicegui.page import page
 
 from rosys.analysis.recording import (
     Converter,
+    McapLogHandler,
     McapRecorder,
     TopicSchema,
     add_event_topic,
@@ -32,7 +34,7 @@ from rosys.analysis.recording import (
     scalar,
     transform_3d,
 )
-from rosys.geometry import GeoPose, Pose, Pose3d, Rotation, Velocity
+from rosys.geometry import Frame3d, GeoPose, Pose, Pose3d, Rotation, Velocity
 from rosys.hardware.bms_state import BmsState
 from rosys.hardware.gnss import GnssMeasurement
 from rosys.hardware.gnss.nmea import GpsQuality
@@ -78,7 +80,7 @@ def _read_raw(path: Path) -> list[bytes]:
 
 
 def _only_file(mcap_dir: Path) -> Path:
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(mcap_dir.rglob('*.mcap'))
     assert len(files) == 1
     return files[0]
 
@@ -291,6 +293,54 @@ async def test_extract_reads_live_state_at_write_time(mcap_dir: Path) -> None:
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message == {'value': 1}
+
+
+async def test_a_pose_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A pose emitted and then moved in place is recorded on ``/pose`` and ``/tf`` at its emitted position."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_pose_topic(recorder, '/pose', event=event, child='base_link')
+    recorder.start()
+    pose = Pose(x=1.0, y=2.0, yaw=0.0, time=1.0)
+    event.emit(pose)
+    pose.x = 5.0
+    await recorder.stop()
+
+    by_schema = dict(_read(_only_file(mcap_dir)))
+    assert by_schema['foxglove.PoseInFrame']['pose']['position']['x'] == 1.0
+    assert by_schema['foxglove.FrameTransform']['translation']['x'] == 1.0
+
+
+async def test_a_frame_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A ``Frame3d`` emitted and then moved and rotated in place is recorded as it was emitted."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/tf', event=event, converter=transform_3d(child='camera'))
+    recorder.start()
+    frame = Frame3d(x=1.0, y=0.0, z=0.5)
+    event.emit(frame)
+    frame.x = 5.0
+    frame.rotation = Rotation.from_euler(0, 0, math.pi / 2)
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message['translation']['x'] == 1.0
+    assert message['rotation']['w'] == pytest.approx(1.0)
+
+
+async def test_a_battery_state_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A ``BmsState`` updated in place after its event is recorded with the emitted values."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/battery', event=event, timestamp=lambda state: state.last_update)
+    recorder.start()
+    state = BmsState(percentage=42.0, voltage=24.0, last_update=3.0)
+    event.emit(state)
+    state.percentage = 10.0
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message['percentage'] == pytest.approx(0.42)
 
 
 async def test_scalar_extract_returning_none_skips_the_message(mcap_dir: Path) -> None:
@@ -586,6 +636,24 @@ async def test_image_annotations_from_detections(mcap_dir: Path) -> None:
     assert {t['text'] for t in message['texts']} == {'weed (0.90)', 'crop (0.80)'}
 
 
+async def test_image_annotations_record_the_detections_present_when_emitted(mcap_dir: Path) -> None:
+    """Detections a second detector adds after the image was emitted stay out of that image's overlay."""
+    image = Image.create_placeholder('x', camera_id='front', time=2.0)
+    image.set_detections('first', Detections(
+        points=[PointDetection(category_name='crop', model_name='m', confidence=0.8, x=5.0, y=6.0)]))
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/camera/front/annotations', event=event, converter=image_annotations())
+    recorder.start()
+    event.emit(image)
+    image.set_detections('second', Detections(
+        points=[PointDetection(category_name='weed', model_name='m', confidence=0.9, x=7.0, y=8.0)]))
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert [t['text'] for t in message['texts']] == ['crop (0.80)']
+
+
 async def test_image_annotations_filters_by_camera_id(mcap_dir: Path) -> None:
     """``image_annotations(camera_id=...)`` skips images from other cameras."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
@@ -634,8 +702,8 @@ async def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> No
     add_event_topic(recorder, '/battery', event=event,
                     timestamp=lambda state: state.last_update, converter=battery_state())
     recorder.start()
-    event.emit(SimpleNamespace(percentage=87.5, voltage=25.2, current=-3.1,
-                               temperature=24.0, is_charging=False, last_update=5.0))
+    event.emit(BmsState(percentage=87.5, voltage=25.2, current=-3.1,
+                        temperature=24.0, is_charging=False, last_update=5.0))
     await recorder.stop()
 
     with open(_only_file(mcap_dir), 'rb') as f:
@@ -829,3 +897,68 @@ async def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> No
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['pose']['position']['x'] == 3.0
+
+
+def _recording_logger(recorder: McapRecorder) -> logging.Logger:
+    """A logger whose lines the given recorder records, with no handler left from an earlier test.
+
+    :param recorder: the recorder the log handler writes to.
+    :return: the logger to log through.
+    """
+    logger = logging.getLogger('rosys.test.recording')
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()
+    logger.addHandler(McapLogHandler(recorder))
+    return logger
+
+
+async def test_log_lines_are_recorded(mcap_dir: Path) -> None:
+    """A line logged while the handler is attached lands in the recording as a foxglove.Log message."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    logger.warning('found %d weeds', 3)
+    await recorder.stop()
+    logger.handlers.clear()
+
+    schema_name, message = _read(_only_file(mcap_dir))[0]
+    assert schema_name == 'foxglove.Log'
+    assert message['message'] == 'found 3 weeds'
+    assert message['level'] == 3  # foxglove WARNING
+    assert message['name'] == 'rosys.test.recording'
+    assert message['file'] == 'test_mcap_converters.py'
+
+
+async def test_log_levels_map_onto_foxglove(mcap_dir: Path) -> None:
+    """Foxglove colours and filters a line by its level, so every Python level needs its counterpart."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL):
+        logger.log(level, 'a line')
+    await recorder.stop()
+    logger.handlers.clear()
+
+    assert [message['level'] for _, message in _read(_only_file(mcap_dir))] == [1, 2, 3, 4, 5]
+
+
+async def test_the_recorders_own_warning_about_a_full_queue_is_recorded(mcap_dir: Path) -> None:
+    """The recorder's own lines are recorded too, the one it logs while dropping queued messages included."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.max_queued_messages = 3
+    handler = McapLogHandler(recorder)
+    recorder.log.addHandler(handler)
+    recorder.add_topic('/test', TopicSchema('Test', b'{}', 'jsonschema', 'json'))
+    recorder.start()
+    try:
+        for _ in range(5):
+            recorder.log_message('/test', b'{}')
+        await recorder.stop()
+    finally:
+        recorder.log.removeHandler(handler)
+
+    log_lines = [message['message'] for schema_name, message in _read(_only_file(mcap_dir))
+                 if schema_name == 'foxglove.Log']
+    assert any(line.startswith('recording queue full') for line in log_lines)

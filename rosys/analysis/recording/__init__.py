@@ -12,6 +12,8 @@ from .converters import (
     text,
 )
 from .foxglove import (
+    LogEntry,
+    McapLogHandler,
     add_pose_topic,
     battery_state,
     camera_calibration,
@@ -22,6 +24,7 @@ from .foxglove import (
     image_annotations,
     imu,
     location_fix,
+    log,
     pose_in_frame,
     transform_3d,
     velocity,
@@ -34,14 +37,20 @@ from .mcap_recorder import (
     RecordingSource,
     TopicSchema,
 )
+from .merging import MERGE_METADATA_NAME, METADATA_NAME, merge_recordings
+from .naming import run_and_part, run_start
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 from .recordings_page_ import RecordingsPage
 
 __all__ = [
     'DOWNLOAD_PATH',
+    'MERGE_METADATA_NAME',
+    'METADATA_NAME',
     'NANOSECONDS_PER_SECOND',
     'PAGE_PATH',
     'Converter',
+    'LogEntry',
+    'McapLogHandler',
     'McapRecorder',
     'RecordingInfo',
     'RecordingSource',
@@ -64,10 +73,14 @@ __all__ = [
     'integer',
     'is_indexed',
     'location_fix',
+    'log',
+    'merge_recordings',
     'number',
     'pose_in_frame',
     'register',
     'reindex',
+    'run_and_part',
+    'run_start',
     'scalar',
     'text',
     'transform_3d',

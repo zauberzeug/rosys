@@ -1,75 +1,81 @@
-import asyncio
 import logging
-from asyncio import Task
-from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
-from contextlib import asynccontextmanager
+from collections.abc import Awaitable, Callable
 
 import httpx
 
 from ... import rosys
-from ...rosys import on_startup
-from ..image_processing import remove_exif
+from ...helpers import invoke
+from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
+from .mjpeg_stream_worker import MjpegStreamWorker, StreamEndedError
+from .stream_channel import EndReason, Frame
 from .vendors import mac_to_url
 
-log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
+
+class CameraAddressUnknown(Exception):
+    """Raised when the camera settings are used before discovery has found an address."""
 
 
-def parse_capture_timestamp(part_header: bytes) -> float | None:
-    """Extract the absolute capture instant (Unix epoch seconds) from the ``X-Timestamp``
-    field of an MJPEG multipart part header.
-
-    Cameras that stamp each frame at capture time emit an ``X-Timestamp: <sec>.<usec>``
-    line in the part header preceding the JPEG. Returns ``None`` when the field is absent
-    or unparsable, so the caller can fall back to the receive time.
-    """
-    marker = b'x-timestamp:'
-    index = part_header.lower().rfind(marker)
-    if index == -1:
-        return None
-    line_end = part_header.find(b'\r\n', index)
-    raw = part_header[index + len(marker):] if line_end == -1 else part_header[index + len(marker):line_end]
-    try:
-        return float(raw.strip())
-    except ValueError:
-        return None
+class CameraUnreachable(Exception):
+    """Raised when the stream worker could not reach the camera."""
 
 
-class MjpegDevice:
+class MjpegDevice(CaptureDevice):
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: ImageDataHandler,
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
+        super().__init__(name=mac,
+                         log=logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + mac),
+                         on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
-        self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
-
+        self._index = index
         self._on_new_image_data = on_new_image_data
-        self._capture_task: Task | None = None
         self._username = username
         self._password = password
-        url = mac_to_url(mac, ip, index=index)
-        if url is None:
-            raise ValueError(f'could not determine URL for {mac}')
-        self._url = url
 
-        self.start_capture_task()
+        self._start_capture_task()
 
     @property
-    def is_connected(self) -> bool:
-        return (self._capture_task is not None) and (not self._capture_task.done())
+    def ip(self) -> str | None:
+        """The address of the camera; assigning a new one makes the capture loop reopen the stream there."""
+        return self._ip
 
-    def start_capture_task(self) -> None:
-        def create_capture_task() -> None:
-            loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self.run_capture_task())
-        on_startup(create_capture_task)
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        if ip == self._ip:
+            return
+        self.log.info('address changed to %s', ip)
+        self._ip = ip
+        self.restart_capture()
 
-    def restart_capture(self) -> None:
-        self.log.debug('Restarting capture task')
-        self.shutdown()
-        self.start_capture_task()
+    @property
+    def url(self) -> str | None:
+        """The stream URL, or ``None`` when the address is unknown or no URL scheme is known for the mac."""
+        if self._ip is None:
+            return None
+        return mac_to_url(self._mac, self._ip, index=self._index)
+
+    def _retry_reason(self) -> tuple[int, str] | None:
+        if self._ip is None:
+            return logging.DEBUG, 'no address known'
+        if self.url is None:
+            return logging.DEBUG, f'no stream URL for mac "{self._mac}"'
+        if self.is_refused:
+            return logging.INFO, 'camera refused the stream'
+        return None
+
+    def _describe_session_error(self, error: Exception) -> str:
+        if isinstance(error, CameraAddressUnknown):
+            return 'no address known yet'
+        if isinstance(error, CameraUnreachable | httpx.HTTPError):
+            return f'cannot reach the camera: {error}'
+        return super()._describe_session_error(error)
 
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
@@ -78,73 +84,49 @@ class MjpegDevice:
         Implementations should log and return on failure rather than raise.
         """
 
-    async def _frame_reader(self, response: httpx.Response) -> AsyncGenerator[tuple[bytes, float | None], None]:
-        """Yield ``(jpeg, capture_time)`` pairs from a live MJPEG response."""
-        buffer_size = 16 * 1024 * 1024
-        buffer = bytearray(buffer_size)
-        buffer_view = memoryview(buffer)
-        buffer_end = 0
+    async def _run_session(self) -> None:
+        """Have a worker process open the stream and consume its frames until it ends."""
+        url = self.url
+        if url is None:
+            return
+        self.log.debug('Starting capture task for %s', url)
 
+        await self._prepare_stream()
+        worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
         try:
-            async for chunk in response.aiter_bytes():
-                chunk_len = len(chunk)
+            async for frame in worker.frames():
+                if not self._keeps_running():
+                    return
+                if not self.is_connected:
+                    await self._enter_streaming()
+                if self.url != url:
+                    self.log.info('stream settings changed; reopening the stream')
+                    return
+                await self._deliver(frame)
+        except StreamEndedError as end:
+            if self._keeps_running():
+                self._end_session(url, end)
+        finally:
+            await worker.shutdown()
 
-                if buffer_end + chunk_len > buffer_size:
-                    self.log.warning('Buffer overflow, resetting buffer')
-                    buffer_end = 0
+    def _end_session(self, url: str, end: StreamEndedError) -> None:
+        match end.reason:
+            case EndReason.REFUSED:
+                self.log.error('camera at %s refused the stream: %s', url, end.detail)
+                self._set_state(CaptureState.REFUSED)
+            case EndReason.UNREACHABLE:
+                raise CameraUnreachable(end.detail)
+            case EndReason.STALLED:
+                self.log.warning('camera at %s stopped sending data', url)
+            case EndReason.FAILED:
+                raise RuntimeError(end.detail)
 
-                buffer_view[buffer_end:buffer_end + chunk_len] = chunk
-                buffer_end += chunk_len
-
-                end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
-                if end == -1:
-                    continue
-
-                start = buffer.rfind(b'\xff\xd8', 0, end)
-                if start == -1:
-                    continue
-
-                # the bytes before the SOI marker are this frame's multipart part header
-                capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
-                end += 2
-                yield bytes(buffer_view[start:end]), capture_time
-                buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
-                buffer_end -= end
-
-            self.log.debug('Stream ended')
-        except httpx.ReadTimeout:
-            self.log.warning('Connection to %s timed out', self._url)
-
-    async def run_capture_task(self) -> None:
-        self.log.debug('Starting capture task for %s', self._url)
-
-        async with httpx.AsyncClient() as client:
-            try:
-                await self._prepare_stream()
-                async with open_stream(client, self._url, self._username, self._password) as response:
-                    if response is not None:
-                        async for image, capture_time in self._frame_reader(response):
-                            if not image:
-                                continue
-                            try:
-                                timestamp = capture_time if capture_time is not None else rosys.time()
-                                result = self._on_new_image_data(remove_exif(image), timestamp)
-                                if isinstance(result, Awaitable):
-                                    await result
-                            except Exception as e:
-                                self.log.error('Error processing image: %s', e)
-            except Exception as e:
-                self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
-                raise
-
-        self.log.warning('Capture task stopped')
-        self._capture_task = None
-
-    def shutdown(self) -> None:
-        self.log.debug('Shutting down capture task')
-        if self._capture_task is not None:
-            self._capture_task.cancel()
-            self._capture_task = None
+    async def _deliver(self, frame: Frame) -> None:
+        timestamp = frame.capture_time if frame.capture_time is not None else rosys.time()
+        try:
+            await invoke(self._on_new_image_data, frame.array, timestamp)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            self.log.error('Error processing image: %s', e)
 
     async def get_fps(self) -> int | None:
         return None
@@ -163,38 +145,3 @@ class MjpegDevice:
 
     async def set_mirrored(self, mirrored: bool) -> None:
         pass
-
-
-def auth_for_challenge(www_authenticate: str, username: str, password: str) -> httpx.Auth:
-    """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
-    scheme = www_authenticate.split(' ', 1)[0].lower()
-    if scheme == 'digest':
-        return httpx.DigestAuth(username, password)
-    if scheme != 'basic':
-        log.debug('unknown auth scheme "%s", falling back to basic', scheme)
-    return httpx.BasicAuth(username, password)
-
-
-@asynccontextmanager
-async def open_stream(client: httpx.AsyncClient, url: str,
-                      username: str | None, password: str | None) -> AsyncIterator[httpx.Response | None]:
-    """Negotiate the auth scheme and open the http connection.
-
-    Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
-    Yields the live 200 response, or ``None`` if the camera refused the connection.
-    """
-    auth: httpx.Auth | None = None
-    while True:
-        async with client.stream('GET', url, auth=auth) as response:
-            if response.status_code == 401 and auth is None and username is not None and password is not None:
-                auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
-                log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
-                continue
-            if response.status_code != 200:
-                auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                log.error('could not connect to %s (auth: %s): %s %s',
-                          url, auth_scheme, response.status_code, response.reason_phrase)
-                yield None
-                return
-            yield response
-            return

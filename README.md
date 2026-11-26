@@ -101,7 +101,7 @@ Another module can register on `NEW_SENSOR_DATA` and act accordingly when being 
 
 RoSys provides an `Automator` module for running "automations".
 Automations are coroutines that can not only be started and stopped, but also paused and resumed, e.g. using `AutomationControls`.
-Have a look at our [Click-and-drive](examples/click-and-drive/README.md) example.
+Have a look at our [Click-and-drive](https://rosys.io/examples/click-and-drive/) example.
 
 ### Persistence
 
@@ -128,6 +128,20 @@ CPU-bound:
 If you need to do some heavy computation and want to spawn another process,
 you should wrap the code in a function and await it with `await rosys.run.cpu_bound(...)`.
 
+RoSys starts helper processes (MJPEG stream workers, path planning) with the `spawn` start method, which re-imports your main script in the child.
+A script that creates these at import time must therefore put its startup under `if __name__ == '__main__':`, or the helpers start recursively.
+The workers of `rosys.run.cpu_bound` are spawned as well, so anything your main script does at import time runs once per worker.
+A worker that opens the serial port a second time disturbs the running connection to the microcontroller:
+it resets the baud rate and flushes the input, which corrupts incoming lines.
+So create such hardware under `if __name__ == '__main__':` and pass `reload=False` to `ui.run`, as in the [remote camera example](https://rosys.io/examples/cameras/).
+With `reload=True` the guard does not help, because the server itself then runs as `__mp_main__`, just like the workers.
+
+Spawned workers also cost memory and start-up time:
+on a Jetson Orin, six workers of a bare RoSys app take about 700 MB, and the first round of calls waits about 3 seconds for them.
+An application can choose another start method by setting `nicegui.run.process_pool_start_method` before calling `ui.run`.
+`'forkserver'` saves most of the memory but still re-imports the main script.
+`'fork'` avoids both, but NiceGUI considers it unsafe in a process that runs threads.
+
 ### Safety
 
 Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.
@@ -146,7 +160,7 @@ It is a domain-specific language interpreted by the microcontroller which enable
 RoSys builds upon the open source project [NiceGUI](https://nicegui.io/) and offers many robot-related UI elements.
 NiceGUI is a high-level UI framework for the web.
 This means you can write all UI code in Python and the state is automatically reflected in the browser through WebSockets.
-See any of our [examples](examples/steering/README.md).
+See any of our [examples](https://rosys.io/examples/steering/).
 
 RoSys can also be used with other user interfaces or interaction models if required, for example a completely app-based control through Bluetooth Low Energy with Flutter.
 

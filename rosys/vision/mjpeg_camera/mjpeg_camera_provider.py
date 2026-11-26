@@ -4,6 +4,7 @@ import httpx
 
 from ... import rosys
 from ..camera_provider import CameraProvider
+from ..http import new_async_client
 from ..rtsp_camera.arp_scan import find_cameras
 from .mjpeg_camera import MjpegCamera
 from .vendors import VendorType, mac_to_vendor
@@ -30,15 +31,13 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
         self.network_interface = network_interface
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
-        rosys.on_shutdown(self.shutdown)
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.log.debug('restoring camera: %s', camera_data)
-            camera = MjpegCamera.from_dict(camera_data)
-            self.add_camera(camera)
+            self.add_camera(MjpegCamera.from_dict(camera_data))
 
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
         self.log.debug('scanning for cameras...')
@@ -54,7 +53,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
                     httpx.DigestAuth(self.username, self.password)
                 url = f'http://{ip}/axis-cgi/videostatus.cgi'
                 try:
-                    async with httpx.AsyncClient() as client:
+                    async with new_async_client() as client:
                         response = await client.get(url, auth=authentication)
                 except httpx.HTTPError as e:
                     self.log.warning('Error while looking for cameras at axis router (%s): %s', url, e)
@@ -78,16 +77,10 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
 
     async def update_device_list(self) -> None:
         for camera_id, ip in await self.scan_for_cameras():
-            if camera_id not in self._cameras:
+            camera = self._cameras.get(camera_id)
+            if camera is None:
                 self.log.info('found new camera "%s" at ip "%s"', camera_id, ip)
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
-                                password=self.password, ip=ip))
-            camera = self._cameras[camera_id]
-            if not camera.is_connected:
-                self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
+                                            password=self.password, ip=ip))
+            else:
                 camera.ip = ip
-                await camera.connect()
-
-    async def shutdown(self) -> None:
-        for camera in self._cameras.values():
-            await camera.disconnect()

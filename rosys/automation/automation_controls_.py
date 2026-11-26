@@ -28,6 +28,6 @@ class AutomationControls:
             pause_button.enabled = pause_button.visible and not uninterruptible_is_running
             resume_button.visible = automator.is_paused
             resume_button.enabled = resume_button.visible and automator.enabled and not uninterruptible_is_running
-            stop_button.enabled = not automator.is_stopped and not uninterruptible_is_running
+            stop_button.enabled = not automator.is_stopped and not automator.is_stopping
 
         ui.timer(config.ui_update_interval, refresh)

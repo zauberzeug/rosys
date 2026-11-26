@@ -1,3 +1,4 @@
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
@@ -6,12 +7,12 @@ from uuid import uuid4
 import numpy as np
 
 from .. import rosys
-from ..geometry import Point3d
+from ..geometry import Point, Point3d, Polygon
 from .annotations import Annotations
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector, DetectorInfo, ModelVersioningInfo
+from .detector import Autoupload, BatchImageMetadata, Detector, DetectorInfo, ImageState, ModelVersioningInfo
 from .image import Image
 
 
@@ -35,6 +36,7 @@ class DetectorSimulation(Detector):
     A list of `simulated_objects` can be filled to define what can be detected.
     An optional `noise` parameter controls the spatial accuracy in pixels.
     An optional `detection_delay` parameter simulates the time it takes to process an image.
+    Objects projected into a camera's `masks` are not detected.
     """
 
     def __init__(self,
@@ -42,8 +44,9 @@ class DetectorSimulation(Detector):
                  noise: float = 1.0,
                  detection_delay: float = 0.4,
                  name: str | None = None,
+                 masks: Mapping[str, Iterable[Polygon]] | None = None,
                  ) -> None:
-        super().__init__(name=name)
+        super().__init__(name=name, masks=masks)
 
         self.camera_provider = camera_provider
         self.noise = noise
@@ -62,12 +65,22 @@ class DetectorSimulation(Detector):
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(self.detection_delay)
-        image.set_detections(self.name, Detections())
-        if not is_blocked:
-            self.update_simulated_objects(image)
-            self.detect_from_simulated_objects(image)
-        self.NEW_DETECTIONS.emit(image)
-        return image.get_detections(self.name)
+        return self._detect_single_image(image, is_blocked)
+
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None,
+                           ) -> list[Detections] | None:
+        if image_metadata is not None and len(image_metadata) != len(images):
+            raise ValueError(f'got {len(image_metadata)} image metadata for {len(images)} images')
+        blocked = [image.camera_id in self.blocked_cameras for image in images]
+        await rosys.sleep(self.detection_delay)
+        return [self._detect_single_image(image, is_blocked) for image, is_blocked in zip(images, blocked, strict=True)]
 
     async def upload(self,
                      image: Image,
@@ -76,8 +89,9 @@ class DetectorSimulation(Detector):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      annotations: Annotations | None = None,
+                     state: ImageState | None = None,
                      ) -> None:
-        self.log.info('Uploading %s', image.id)
+        self.log.info('Uploading %s to %s', image.id, state.value if state else 'the default state')
 
     async def fetch_detector_info(self) -> DetectorInfo:
         return DetectorInfo(operation_mode='simulation',
@@ -107,6 +121,7 @@ class DetectorSimulation(Detector):
         detections = image.get_detections(self.name)
         assert detections is not None
         world_extrinsics = camera.calibration.extrinsics.resolve()
+        polygons = self.masks.polygons.get(image.camera_id, ())
         for obj in self.simulated_objects:
             viewing_direction = np.array(world_extrinsics.rotation.R)[:, 2]
             object_direction = np.array(obj.position.tuple) - world_extrinsics.translation
@@ -117,6 +132,12 @@ class DetectorSimulation(Detector):
                 continue
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
+            if polygons:
+                # NOTE: pixel centers sit at integer coordinates, while normalized 0 and 1 are the image's outer edges
+                normalized_point = Point(x=(image_point.x + 0.5) / image.size.width,
+                                         y=(image_point.y + 0.5) / image.size.height)
+                if any(polygon.contains(normalized_point) for polygon in polygons):
+                    continue
 
             if obj.size is None:
                 detections.points.append(PointDetection(
@@ -147,3 +168,13 @@ class DetectorSimulation(Detector):
                     height=image_points[:, 1].max() - image_points[:, 1].min() + self.noise * np.random.randn(),
                     uuid=obj.uuid,
                 ))
+
+    def _detect_single_image(self, image: Image, is_blocked: bool) -> Detections:
+        image.set_detections(self.name, Detections())
+        if not is_blocked:
+            self.update_simulated_objects(image)
+            self.detect_from_simulated_objects(image)
+        self.NEW_DETECTIONS.emit(image)
+        detections = image.get_detections(self.name)
+        assert detections is not None
+        return detections

@@ -3,23 +3,6 @@ from nicegui import ui
 
 import rosys
 
-if rosys.hardware.SerialCommunication.is_possible():
-    communication = rosys.hardware.SerialCommunication()
-    robot_brain = rosys.hardware.RobotBrain(communication)
-    can = rosys.hardware.CanHardware(robot_brain)
-    wheels = rosys.hardware.WheelsHardware(robot_brain, can=can)
-    robot = rosys.hardware.RobotHardware([can, wheels], robot_brain)
-    camera_provider = rosys.vision.UsbCameraProvider()
-else:
-    wheels = rosys.hardware.WheelsSimulation()
-    robot = rosys.hardware.RobotSimulation([wheels])
-    rosys.vision.SimulatedCameraProvider.USE_PERSISTENCE = False
-    camera_provider = rosys.vision.SimulatedCameraProvider()
-    camera = rosys.vision.SimulatedCamera(id='test_cam', width=800, height=600)
-    rosys.on_startup(lambda: camera_provider.add_camera(camera))
-steerer = rosys.driving.Steerer(wheels)
-odometer = rosys.driving.Odometer(wheels)
-
 
 def root() -> None:
     async def add_main_camera(camera: rosys.vision.Camera) -> None:
@@ -42,4 +25,21 @@ def root() -> None:
                 .classes('m-8 text-center')
 
 
-ui.run(root, title='RoSys')
+if __name__ == '__main__':  # spawned cpu_bound workers must not open the serial port again
+    if rosys.hardware.SerialCommunication.is_possible():
+        communication = rosys.hardware.SerialCommunication()
+        robot_brain = rosys.hardware.RobotBrain(communication)
+        can = rosys.hardware.CanHardware(robot_brain)
+        wheels = rosys.hardware.WheelsHardware(robot_brain, can=can)
+        robot = rosys.hardware.RobotHardware([can, wheels], robot_brain)
+        camera_provider = rosys.vision.UsbCameraProvider()
+    else:
+        wheels = rosys.hardware.WheelsSimulation()
+        robot = rosys.hardware.RobotSimulation([wheels])
+        rosys.vision.SimulatedCameraProvider.USE_PERSISTENCE = False
+        camera_provider = rosys.vision.SimulatedCameraProvider()
+        camera = rosys.vision.SimulatedCamera(id='test_cam', resolution=(800, 600))
+        rosys.on_startup(lambda: camera_provider.add_camera(camera))
+    steerer = rosys.driving.Steerer(wheels)
+    odometer = rosys.driving.Odometer(wheels)
+    ui.run(root, title='RoSys', reload=False)

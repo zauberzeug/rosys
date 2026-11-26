@@ -45,7 +45,6 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
     is_simulation: bool = False
 
@@ -58,10 +57,6 @@ def is_simulation() -> bool:
 def enter_simulation() -> None:
     """Enter system time simulation mode."""
     _state.is_simulation = True
-
-
-def get_last_exception() -> BaseException | None:
-    return _state.exception
 
 
 notifications: list[Notification] = []
@@ -95,6 +90,7 @@ def notify(message: str,
 
 
 time_lock = threading.Lock()
+_sleepers_awaiting_tick: list[asyncio.Future[None]] = []
 
 
 def time() -> float:
@@ -113,6 +109,21 @@ def time() -> float:
 def set_time(value: float) -> None:
     assert is_test, 'only tests can change the time'
     _state.time = value
+    _tick_test_clock()
+
+
+def _tick_test_clock() -> None:
+    waiting = _sleepers_awaiting_tick.copy()
+    _sleepers_awaiting_tick.clear()
+    for tick in waiting:
+        if not tick.done() and not tick.get_loop().is_closed():
+            tick.set_result(None)
+
+
+async def _wait_for_next_tick() -> None:
+    tick = asyncio.get_running_loop().create_future()
+    _sleepers_awaiting_tick.append(tick)
+    await tick
 
 
 def uptime() -> float:
@@ -123,7 +134,10 @@ async def sleep(seconds: float) -> None:
     if is_test:
         sleep_end_time = time() + seconds
         while time() <= sleep_end_time:
-            await asyncio.sleep(0)
+            if run.running_cpu_bound_processes:
+                await _wait_for_next_tick()  # NOTE: idle instead of competing with the cpu_bound job for the CPU
+            else:
+                await asyncio.sleep(0)
     else:
         if config.simulation_speed <= 0:
             config.simulation_speed = 0.01
@@ -351,7 +365,7 @@ async def startup() -> None:
 
 
 async def _garbage_collection() -> None:
-    if psutil.virtual_memory().free < config.garbage_collection_mbyte_limit * 1_000_000:
+    if psutil.virtual_memory().available < config.garbage_collection_mbyte_limit * 1_000_000:
         log.warning('less than %s mb of memory remaining -> start garbage collection',
                     config.garbage_collection_mbyte_limit)
         gc.collect()
@@ -362,7 +376,10 @@ async def _garbage_collection() -> None:
 async def shutdown() -> None:
     for handler in list(shutdown_handlers):  # NOTE: a finalizer may drop entries while we await
         log.debug('invoking shutdown handler "%s"', _handler_name(handler))
-        await invoke(handler)
+        try:
+            await invoke(handler)
+        except Exception:
+            log.exception('error while invoking shutdown handler "%s"', _handler_name(handler))
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('stopping all repeaters')
@@ -385,7 +402,6 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    _state.exception = None
 
 
 def reset_after_test() -> None:
@@ -394,6 +410,7 @@ def reset_after_test() -> None:
     tasks.clear()
     _state.startup_finished = False
     shutdown_handlers.clear()
+    _sleepers_awaiting_tick.clear()
     frame_registry.clear()
 
     Persistable.instances.clear()
