@@ -164,8 +164,6 @@ def _create_placeholder(shrink: int) -> bytes:
 
 async def _get_placeholder(shrink: int = 1) -> Response:
     placeholder_jpeg = await run.cpu_bound(_create_placeholder, shrink)
-    if placeholder_jpeg is None:
-        return Response('Server is stopping', 500)
     return Response(placeholder_jpeg, media_type='image/jpeg')
 
 

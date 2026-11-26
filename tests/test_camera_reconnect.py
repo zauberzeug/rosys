@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import multiprocessing
+import threading
 import weakref
 from collections.abc import AsyncIterator
 from contextlib import nullcontext, suppress
@@ -429,6 +430,36 @@ async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integ
             await forward_until(lambda: len(captures) > 1, real_step=0.02,
                                 message='device did not try to reopen its capture')
         finally:
+            await device.shutdown()
+
+
+async def test_usb_device_releases_its_capture_only_after_a_running_read(rosys_integration):
+    """A cancelled read keeps running in its thread; releasing the capture meanwhile would race with it."""
+    read_started = threading.Event()
+    read_may_end = threading.Event()
+    calls: list[str] = []
+
+    class BlockingCapture(FakeCapture):
+        def read(self):
+            read_started.set()
+            read_may_end.wait(timeout=5)
+            calls.append('read')
+            return super().read()
+
+        def release(self) -> None:
+            calls.append('release')
+            super().release()
+
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: BlockingCapture()), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert await asyncio.to_thread(read_started.wait, 5), 'device did not start reading'
+            asyncio.get_running_loop().call_later(0.1, read_may_end.set)
+            await device.shutdown()
+            assert calls == ['read', 'release']
+        finally:
+            read_may_end.set()
             await device.shutdown()
 
 

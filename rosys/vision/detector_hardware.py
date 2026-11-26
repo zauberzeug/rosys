@@ -313,10 +313,7 @@ class DetectorHardware(Detector):
         """Return the masked image as a payload in the configured transmission format."""
         if self.image_transmission_format == ImageTransmissionFormat.RAW and image.camera_id not in self.masks:
             return self._image_payload(image)
-        payload = await run.io_bound(self._image_payload, image)
-        if payload is None:
-            raise DetectorException('Image preparation was interrupted by shutdown')
-        return payload
+        return await run.io_bound(self._image_payload, image)
 
     def _image_payload(self, image: Image) -> dict[str, Any]:
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
