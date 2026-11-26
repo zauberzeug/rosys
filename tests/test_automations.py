@@ -143,6 +143,37 @@ async def test_stopping_while_first_completed_waits_for_an_uninterruptible_sibli
     assert automator.is_stopped
 
 
+async def test_a_failure_inside_an_uninterruptible_sibling_is_not_swallowed(automator: Automator):
+    """The held-back stop must not replace a failure that is already propagating out of the section."""
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+
+    @rosys.automation.uninterruptible
+    async def slow() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the step broke')
+
+    automator.start(rosys.automation.parallelize(quick(), slow(), return_when_first_completed=True))
+    with pytest.raises(AssertionError, match='the step broke'):
+        await forward(seconds=3.0)
+    assert isinstance(automator.last_exception, RuntimeError)
+
+
+async def test_a_failure_inside_an_uninterruptible_section_survives_a_stop(automator: Automator):
+    """A stop requested during the section must not replace the failure that ends it."""
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the step broke')
+
+    automator.start(step())
+    await forward(seconds=0.2)
+    automator.stop(because='test')
+    with pytest.raises(AssertionError, match='the step broke'):
+        await forward(seconds=3.0)
+    assert isinstance(automator.last_exception, RuntimeError)
+
+
 async def test_a_raising_automation_stops_forwarding(automator: Automator):
     """Forwarding stops at the failure instead of stepping through the whole span it was given."""
     async def run() -> None:
