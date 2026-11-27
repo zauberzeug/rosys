@@ -4,8 +4,8 @@ import logging
 import multiprocessing
 import threading
 import weakref
-from collections.abc import AsyncIterator
-from contextlib import nullcontext, suppress
+from collections.abc import AsyncIterator, Callable, Iterator
+from contextlib import asynccontextmanager, contextmanager, nullcontext, suppress
 from typing import ClassVar
 from unittest.mock import AsyncMock, patch
 
@@ -343,7 +343,7 @@ class FakeCapture:
     def __init__(self, *, failing_reads: bool = False) -> None:
         self._opened = True
         self._frame = np.zeros((48, 64, 3), dtype=np.uint8)
-        self.props: dict = {}
+        self.props: dict = {cv2.CAP_PROP_CONVERT_RGB: 1}  # like OpenCV, decode frames unless told otherwise
         self.failing_reads = failing_reads
         self.reads = 0
 
@@ -365,6 +365,15 @@ class FakeCapture:
     def set(self, prop, value) -> bool:
         self.props[prop] = value
         return True
+
+
+class FourccRefusingCapture(FakeCapture):
+    """A capture whose driver refuses the switch to MJPEG, e.g. at the configured resolution."""
+
+    def set(self, prop, value) -> bool:
+        if prop == cv2.CAP_PROP_FOURCC:
+            return False
+        return super().set(prop, value)
 
 
 V4L2_CTL_OUTPUTS = {
@@ -402,49 +411,68 @@ def fake_v4l(outputs: dict[str, str]):
 
 @pytest.fixture(autouse=True)
 def no_v4l2_ctl():
-    """Keep every test from shelling out to the host's v4l2-ctl; a test that needs its output patches `run_v4l` itself."""
+    """Keep tests from shelling out to the host's v4l2-ctl; a test that needs its output patches `run_v4l` itself."""
     with patch.object(UsbDevice, 'run_v4l', fake_v4l({})):
         yield
 
 
-async def test_usb_device_reconnects_after_disconnect(rosys_integration):
+@contextmanager
+def fake_video_device(capture: Callable[[], FakeCapture | None] = FakeCapture, *,
+                      v4l_outputs: dict[str, str] | None = None) -> Iterator[list[FakeCapture]]:
+    """Let /dev/video0 open as captures made by `capture`; yields the list of captures opened so far."""
     captures: list[FakeCapture] = []
 
-    def make_capture(_device_node: str) -> FakeCapture:
-        capture = FakeCapture()
-        captures.append(capture)
-        return capture
+    def create_capture(_device_node: str) -> FakeCapture | None:
+        new_capture = capture()
+        if new_capture is not None:
+            captures.append(new_capture)
+        return new_capture
 
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch.object(UsbDevice, 'create_capture', create_capture), \
+            patch.object(UsbDevice, 'run_v4l', fake_v4l(v4l_outputs)) if v4l_outputs is not None else nullcontext():
+        yield captures
+
+
+@asynccontextmanager
+async def fake_usb_device(capture: Callable[[], FakeCapture | None] = FakeCapture, *,
+                          v4l_outputs: dict[str, str] | None = None,
+                          reconnect_interval: float = 0.3) -> AsyncIterator[tuple[UsbDevice, list[FakeCapture], list]]:
+    """Run a `UsbDevice` on a fake video device; yields the device, its captures and the frames it passed on."""
     frames: list = []
-    with patch.object(UsbDevice, 'create_capture', make_capture), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+    with fake_video_device(capture, v4l_outputs=v4l_outputs) as captures:
         device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
-                           reconnect_interval=0.3)
+                           reconnect_interval=reconnect_interval)
         try:
-            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
-                                message='device did not capture any frames')
-            assert device.is_connected
-            captures_before = len(captures)
-
-            captures[-1].release()  # simulate a bad cable: the capture dies
-            await forward_until(lambda: len(captures) > captures_before, real_step=0.02,
-                                message='device did not reopen its capture')
-            assert device.is_connected
-
-            frames_after_reconnect = len(frames)
-            await forward_until(lambda: len(frames) > frames_after_reconnect,
-                                step=0.1, real_step=0.02, attempts=10,
-                                message='frames did not resume after reconnect')
-
-            await device.shutdown()
-            assert not device.is_connected
-            captures_at_shutdown = len(captures)
-            for _ in range(5):
-                await forward(0.3)
-                await asyncio.sleep(0.02)
-            assert len(captures) == captures_at_shutdown, 'device kept reopening after shutdown'
+            yield device, captures, frames
         finally:
             await device.shutdown()
+
+
+async def test_usb_device_reconnects_after_disconnect(rosys_integration):
+    async with fake_usb_device() as (device, captures, frames):
+        await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
+                            message='device did not capture any frames')
+        assert device.is_connected
+        captures_before = len(captures)
+
+        captures[-1].release()  # simulate a bad cable: the capture dies
+        await forward_until(lambda: len(captures) > captures_before, real_step=0.02,
+                            message='device did not reopen its capture')
+        assert device.is_connected
+
+        frames_after_reconnect = len(frames)
+        await forward_until(lambda: len(frames) > frames_after_reconnect,
+                            step=0.1, real_step=0.02, attempts=10,
+                            message='frames did not resume after reconnect')
+
+        await device.shutdown()
+        assert not device.is_connected
+        captures_at_shutdown = len(captures)
+        for _ in range(5):
+            await forward(0.3)
+            await asyncio.sleep(0.02)
+        assert len(captures) == captures_at_shutdown, 'device kept reopening after shutdown'
 
 
 @pytest.mark.parametrize('cancellation_lost', [False, True], ids=['cancelled', 'cancellation_lost'])
@@ -463,14 +491,8 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
             # NOTE: on Python 3.11, asyncio.wait_for in rosys.run.sh can swallow a cancellation racing the result
         return ''
 
-    frames: list = []
-    capture = FakeCapture()
-    with patch.object(UsbDevice, 'create_capture', lambda _device_node: capture), \
-            patch.object(UsbDevice, 'run_v4l', slow_v4l), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
-                           reconnect_interval=0.3)
-        try:
+    with patch.object(UsbDevice, 'run_v4l', slow_v4l):
+        async with fake_usb_device() as (device, captures, frames):
             await forward_until(probing.is_set, real_step=0.02, message='device did not probe its formats')
             assert not device.is_connected, 'the device counted as connected before its formats were probed'
             shutdown = asyncio.ensure_future(device.shutdown())
@@ -482,64 +504,44 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
                 await forward(0.3)
                 await asyncio.sleep(0.02)
             assert not device.is_connected
-            assert not capture.isOpened(), 'the capture opened for probing was not released'
+            assert not captures[0].isOpened(), 'the capture opened for probing was not released'
             assert not frames, 'the capture loop resumed streaming after shutdown'
-        finally:
-            await device.shutdown()
 
 
-@pytest.mark.parametrize('outputs', V4L2_CTL_OUTPUTS.values(), ids=V4L2_CTL_OUTPUTS.keys())
-async def test_usb_device_switches_to_mjpeg_when_the_camera_offers_it(rosys_integration, outputs: dict[str, str]):
-    captures: list[FakeCapture] = []
-
-    def make_capture(_device_node: str) -> FakeCapture:
-        capture = FakeCapture()
-        captures.append(capture)
-        return capture
-
-    frames: list = []
-    with patch.object(UsbDevice, 'create_capture', make_capture), \
-            patch.object(UsbDevice, 'run_v4l', fake_v4l(outputs)), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
-                           reconnect_interval=0.3)
-        try:
-            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
-                                message='device did not capture any frames')
-            assert device.video_formats == {'YUYV', 'MJPG'}
-            assert device.image_is_jpg
-            assert captures[0].props[cv2.CAP_PROP_FOURCC] == MJPG, 'capture was not switched to MJPEG'
-            assert captures[0].props[cv2.CAP_PROP_BUFFERSIZE] == 1
-            assert isinstance(frames[0], bytes), 'MJPEG frames should be passed on as JPEG bytes'
-            assert device.get_exposure() is not None, 'manual exposure was not detected'
-        finally:
-            await device.shutdown()
+@pytest.mark.parametrize('outputs, capture, expect_jpeg', [
+    (V4L2_CTL_OUTPUTS['current'], FakeCapture, True),
+    (V4L2_CTL_OUTPUTS['legacy'], FakeCapture, True),
+    (V4L2_CTL_OUTPUTS['current'], FourccRefusingCapture, False),
+], ids=['current', 'legacy', 'fourcc_refused'])
+async def test_usb_device_switches_to_mjpeg_when_camera_and_driver_support_it(rosys_integration,
+                                                                              outputs: dict[str, str],
+                                                                              capture: type[FakeCapture],
+                                                                              expect_jpeg: bool):
+    async with fake_usb_device(capture, v4l_outputs=outputs) as (device, captures, frames):
+        await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
+                            message='device did not capture any frames')
+        assert device.video_formats == {'YUYV', 'MJPG'}
+        assert device.image_is_jpg is expect_jpeg
+        props = captures[0].props
+        assert (props.get(cv2.CAP_PROP_FOURCC) == MJPG) is expect_jpeg, 'FOURCC does not match the JPEG flag'
+        assert props[cv2.CAP_PROP_CONVERT_RGB] == (0 if expect_jpeg else 1), 'decoding does not match the JPEG flag'
+        assert (props.get(cv2.CAP_PROP_BUFFERSIZE) == 1) is expect_jpeg
+        assert isinstance(frames[0], bytes if expect_jpeg else np.ndarray), 'only MJPEG frames are passed on as bytes'
+        assert device.get_exposure() is not None, 'manual exposure was not detected'
 
 
 async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integration):
     """A cable pulled mid-stream leaves an opened capture whose reads fail; the session must end."""
-    captures: list[FakeCapture] = []
+    async with fake_usb_device(lambda: FakeCapture(failing_reads=True)) as (device, captures, _):
+        await forward_until(lambda: captures and captures[0].reads >= UsbDevice.MAX_READ_FAILURES,
+                            step=0.1, real_step=0.02, attempts=30,
+                            message='device did not keep reading a capture whose reads fail')
+        assert not device.is_connected, 'expected the capture to be released after the failed reads'
+        assert captures[0].reads == UsbDevice.MAX_READ_FAILURES, \
+            'expected the capture to be released as soon as the failures reach the limit'
 
-    def make_capture(_device_node: str) -> FakeCapture:
-        capture = FakeCapture(failing_reads=True)
-        captures.append(capture)
-        return capture
-
-    with patch.object(UsbDevice, 'create_capture', make_capture), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.3)
-        try:
-            await forward_until(lambda: captures and captures[0].reads >= UsbDevice.MAX_READ_FAILURES,
-                                step=0.1, real_step=0.02, attempts=30,
-                                message='device did not keep reading a capture whose reads fail')
-            assert not device.is_connected, 'expected the capture to be released after the failed reads'
-            assert captures[0].reads == UsbDevice.MAX_READ_FAILURES, \
-                'expected the capture to be released as soon as the failures reach the limit'
-
-            await forward_until(lambda: len(captures) > 1, real_step=0.02,
-                                message='device did not try to reopen its capture')
-        finally:
-            await device.shutdown()
+        await forward_until(lambda: len(captures) > 1, real_step=0.02,
+                            message='device did not try to reopen its capture')
 
 
 async def test_usb_device_releases_its_capture_only_after_a_running_read(rosys_integration):
@@ -559,9 +561,7 @@ async def test_usb_device_releases_its_capture_only_after_a_running_read(rosys_i
             calls.append('release')
             super().release()
 
-    with patch.object(UsbDevice, 'create_capture', lambda _device_node: BlockingCapture()), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None)
+    async with fake_usb_device(BlockingCapture) as (device, _, _):
         try:
             assert await asyncio.to_thread(read_started.wait, 5), 'device did not start reading'
             asyncio.get_running_loop().call_later(0.1, read_may_end.set)
@@ -569,19 +569,10 @@ async def test_usb_device_releases_its_capture_only_after_a_running_read(rosys_i
             assert calls == ['read', 'release']
         finally:
             read_may_end.set()
-            await device.shutdown()
 
 
 async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration):
-    captures: list[FakeCapture] = []
-
-    def make_capture(_device_node: str) -> FakeCapture:
-        capture = FakeCapture()
-        captures.append(capture)
-        return capture
-
-    with patch.object(UsbDevice, 'create_capture', make_capture), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+    with fake_video_device() as captures:
         camera = UsbCamera(id='fakecam', resolution=(640, 480), fps=5,
                            connect_after_init=False, reconnect_interval=0.3)
         await camera.connect()
@@ -602,31 +593,6 @@ async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration
             await camera.disconnect()
 
 
-async def test_usb_device_stays_with_the_raw_format_when_the_driver_refuses_mjpeg(rosys_integration):
-    class StubbornCapture(FakeCapture):
-        def set(self, prop, value) -> bool:
-            if prop == cv2.CAP_PROP_FOURCC:
-                return False  # e.g. MJPEG is not available at the configured resolution
-            return super().set(prop, value)
-
-    frames: list = []
-    capture = StubbornCapture()
-    with patch.object(UsbDevice, 'create_capture', lambda _device_node: capture), \
-            patch.object(UsbDevice, 'run_v4l', fake_v4l(V4L2_CTL_OUTPUTS['current'])), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
-                           reconnect_interval=0.3)
-        try:
-            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
-                                message='device did not capture any frames')
-            assert 'MJPG' in device.video_formats
-            assert not device.image_is_jpg, 'frames counted as JPEG although the FOURCC switch was refused'
-            assert cv2.CAP_PROP_CONVERT_RGB not in capture.props, 'frame decoding was disabled without MJPEG'
-            assert isinstance(frames[0], np.ndarray), 'decoded frames should be passed on as arrays'
-        finally:
-            await device.shutdown()
-
-
 async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_integration):
     class JpegCapture(FakeCapture):
         def __init__(self) -> None:
@@ -634,9 +600,7 @@ async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_in
             self._frame = np.frombuffer(JPEG_FRAME, dtype=np.uint8).reshape(1, -1)  # read() yields raw JPEG bytes
 
     cpu_bound = AsyncMock()
-    with patch.object(UsbDevice, 'create_capture', lambda _device_node: JpegCapture()), \
-            patch.object(UsbDevice, 'run_v4l', fake_v4l(V4L2_CTL_OUTPUTS['current'])), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+    with fake_video_device(JpegCapture, v4l_outputs=V4L2_CTL_OUTPUTS['current']), \
             patch('rosys.run.cpu_bound', cpu_bound):
         camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
         await camera.connect()
@@ -1383,19 +1347,14 @@ async def test_usb_device_waits_quietly_for_a_missing_video_device(caplog):
 
 @pytest.mark.usefixtures('rosys_integration')
 async def test_usb_device_warns_once_about_a_busy_video_device(caplog):
-    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
-            patch.object(UsbDevice, 'create_capture', lambda _device_node: None):
-        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
-        try:
-            await forward_until(lambda: sum('retrying' in record.getMessage() for record in caplog.records) >= 2,
-                                message='expected at least two attempts to open the busy device')
-            retry_records = [record for record in caplog.records if 'retrying' in record.getMessage()]
-            assert all('cannot open /dev/video0' in record.getMessage() for record in retry_records)
-            assert all(record.levelno == logging.INFO for record in retry_records)
-            assert sum('another process' in record.getMessage() for record in caplog.records) == 1, \
-                'expected the hint about another process exactly once'
-        finally:
-            await device.shutdown()
+    async with fake_usb_device(lambda: None, reconnect_interval=0.2):
+        await forward_until(lambda: sum('retrying' in record.getMessage() for record in caplog.records) >= 2,
+                            message='expected at least two attempts to open the busy device')
+        retry_records = [record for record in caplog.records if 'retrying' in record.getMessage()]
+        assert all('cannot open /dev/video0' in record.getMessage() for record in retry_records)
+        assert all(record.levelno == logging.INFO for record in retry_records)
+        assert sum('another process' in record.getMessage() for record in caplog.records) == 1, \
+            'expected the hint about another process exactly once'
 
 
 async def test_usb_camera_is_active_without_video_device(rosys_integration):
@@ -1498,8 +1457,8 @@ async def test_rtsp_provider_rebinds_moved_camera(rosys_integration):
 async def test_usb_camera_connects_once_video_device_appears(rosys_integration):
     device_node: str | None = None
 
-    with patch('rosys.vision.usb_camera.usb_device.find_device_node', lambda _uid: device_node), \
-            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+    with fake_video_device(), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', lambda _uid: device_node):  # node comes later
         camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
         await camera.connect()  # no video device node available yet
         try:
@@ -1516,8 +1475,7 @@ async def test_usb_camera_connects_once_video_device_appears(rosys_integration):
 async def test_usb_provider_adds_camera_for_new_device(rosys_integration):
     provider = UsbCameraProvider(auto_scan=False)
     with patch.object(UsbCameraProvider, 'scan_for_cameras', AsyncMock(return_value={'fakecam'})), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
-            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+            fake_video_device():
         await provider.update_device_list()
         camera = provider.cameras['fakecam']
         await asyncio.sleep(0.05)  # let the camera's own connect task run
@@ -1527,8 +1485,7 @@ async def test_usb_provider_adds_camera_for_new_device(rosys_integration):
 
 async def test_usb_provider_leaves_disconnected_camera_alone(rosys_integration):
     with patch.object(UsbCameraProvider, 'scan_for_cameras', AsyncMock(return_value={'fakecam'})), \
-            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
-            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+            fake_video_device():
         provider = UsbCameraProvider(auto_scan=False)
         camera = UsbCamera(id='fakecam', connect_after_init=False)
         provider.add_camera(camera)
