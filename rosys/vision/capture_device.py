@@ -102,7 +102,6 @@ class CaptureDevice(abc.ABC):
 
     def _keeps_running(self) -> bool:
         """Whether the calling capture task should carry on."""
-        # a cancelled task can resume: the rosys.run helpers turn a cancellation into a None result
         return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
 
     def _set_state(self, state: CaptureState) -> None:
@@ -159,8 +158,8 @@ class CaptureDevice(abc.ABC):
         self._state = CaptureState.STOPPED
         self._shutting_down = True
         try:
-            await self._tear_down_session()
             await self._await_capture_task()
+            await self._tear_down_session()
         finally:
             self._shutting_down = False
 

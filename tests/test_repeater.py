@@ -13,14 +13,6 @@ from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _Weak
 from rosys.testing import forward
 
 
-@pytest.fixture
-def rosys_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
-    logger = logging.getLogger('rosys.core')  # NOTE: the test log configuration disables propagation to the root
-    logger.addHandler(caplog.handler)
-    yield caplog
-    logger.removeHandler(caplog.handler)
-
-
 def plain_function() -> str:
     return 'function'
 
@@ -170,7 +162,7 @@ def test_weak_handler_does_not_keep_object_alive():
 async def test_collected_object_does_not_start_orphan_task_after_startup():
     # NOTE: a repeater created pre-startup defers its start; if the object dies first,
     # the replayed start (during startup) must see the dead handler and not launch an orphan task.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -195,7 +187,7 @@ async def test_collected_object_does_not_start_orphan_task_after_startup():
 
 async def test_stop_before_startup_prevents_the_deferred_start():
     # NOTE: a repeater created pre-startup defers its start; stopping it must also drop that pending start.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -219,7 +211,7 @@ async def test_stop_before_startup_prevents_the_deferred_start():
 
 async def test_restart_before_startup_keeps_the_deferred_start():
     # NOTE: stopping and starting again before startup must leave the start queued exactly once.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -242,7 +234,7 @@ async def test_restart_before_startup_keeps_the_deferred_start():
 
 async def test_stopping_a_repeater_during_startup_keeps_the_other_handlers():
     # NOTE: stop() removes a pending start from the list that startup() is iterating; it must not skip a sibling.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -303,7 +295,8 @@ async def test_never_stored_check_does_not_linger_in_task_registry():
     assert not any(task.done() for task in tasks)  # the finished check task got pruned from the registry
 
 
-async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixture):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_never_stored_object_logs_warning(caplog: pytest.LogCaptureFixture):
     calls: list[float] = []
     repeater = rosys.on_repeat(Ticker(calls).step, 0.1)  # NOTE: the Ticker is not stored anywhere
 
@@ -311,11 +304,12 @@ async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixt
 
     assert not repeater.running
     assert not calls  # never ticked
-    assert any('will never be called' in record.message for record in rosys_log.records)
+    assert any('will never be called' in record.message for record in caplog.records)
 
 
-async def test_object_collected_later_logs_debug_instead_of_warning(rosys_log: pytest.LogCaptureFixture):
-    rosys_log.set_level(logging.DEBUG, logger='rosys.core')
+@pytest.mark.usefixtures('rosys_integration')
+async def test_object_collected_later_logs_debug_instead_of_warning(caplog: pytest.LogCaptureFixture):
+    caplog.set_level(logging.DEBUG, logger='rosys.core')
     calls: list[float] = []
     ticker = Ticker(calls)
     repeater = rosys.on_repeat(ticker.step, 0.1)
@@ -326,9 +320,9 @@ async def test_object_collected_later_logs_debug_instead_of_warning(rosys_log: p
     await forward(0.5)
 
     assert not repeater.running
-    assert not any('will never be called' in record.message for record in rosys_log.records)
+    assert not any('will never be called' in record.message for record in caplog.records)
     assert any('garbage-collected' in record.message and record.levelno == logging.DEBUG
-               for record in rosys_log.records)
+               for record in caplog.records)
 
 
 @pytest.mark.usefixtures('rosys_integration')

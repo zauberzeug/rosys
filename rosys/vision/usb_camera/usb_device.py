@@ -1,5 +1,6 @@
 import logging
 import re
+import threading
 from collections.abc import Awaitable, Callable
 
 import cv2
@@ -48,6 +49,7 @@ class UsbDevice(CaptureDevice):
         self._image_is_jpg: bool = False
         self._read_failures: int = 0
         self._unavailable_node: str | None = None
+        self._capture_lock = threading.Lock()  # a cancelled read keeps running in its thread; release must wait for it
 
         self._start_capture_task()
 
@@ -83,10 +85,7 @@ class UsbDevice(CaptureDevice):
                 if self._capture is None:
                     return
 
-            read_result = await rosys.run.io_bound(self._capture.read)
-            if read_result is None:
-                return
-            capture_success, frame = read_result
+            capture_success, frame = await rosys.run.io_bound(self._read, self._capture)
 
             if not capture_success:
                 self._read_failures += 1
@@ -100,8 +99,6 @@ class UsbDevice(CaptureDevice):
             timestamp = rosys.time()
             if self._image_is_jpg:
                 bytes_ = await rosys.run.io_bound(to_bytes, frame[0])
-                if bytes_ is None:
-                    continue
                 result = self._on_new_image_data(bytes_, timestamp)
             else:
                 # convert bgr to rgb
@@ -139,9 +136,17 @@ class UsbDevice(CaptureDevice):
 
     async def _release(self) -> None:
         if self._capture is not None:
-            await rosys.run.io_bound(self._capture.release)
+            await rosys.run.io_bound(self._release_capture, self._capture)
             self._capture = None
         self._device_node = None
+
+    def _read(self, capture: cv2.VideoCapture) -> tuple[bool, cv2.typing.MatLike]:
+        with self._capture_lock:
+            return capture.read()
+
+    def _release_capture(self, capture: cv2.VideoCapture) -> None:
+        with self._capture_lock:
+            capture.release()
 
     async def _tear_down_session(self) -> None:
         await self._release()

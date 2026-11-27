@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from collections import deque
+from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable, Mapping
 from itertools import pairwise
 
 from nicegui import Event, ui
@@ -8,7 +9,7 @@ from nicegui import Event, ui
 from .. import rosys
 from .communication import Communication
 from .esp_pins import EspPins
-from .lizard_firmware import LizardFirmware
+from .lizard_firmware import FirmwareFlashError, LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
 MAX_CONFIGURE_ATTEMPTS = 3
@@ -39,7 +40,7 @@ class RobotBrain:
                  enable_esp_on_startup: bool = True,
                  use_espresso: bool = False,
                  heartbeat_interval: float | None = None,
-                 supported_lizard_versions: str | None = None) -> None:
+                 supported_lizard_versions: Mapping[str, str] | None = None) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -47,9 +48,10 @@ class RobotBrain:
         :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
         :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
         :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
-        :param supported_lizard_versions: PEP 440 version specifier restricting which Lizard versions can be
-            downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
-        :raises InvalidSpecifier: When ``supported_lizard_versions`` is not a valid version specifier
+        :param supported_lizard_versions: PEP 440 version specifier per firmware project restricting what can be
+            downloaded and flashed, e.g. ``{'lizard': '<0.14.0'}``; a project not listed is refused
+            (default: ``None``, every project and version is supported)
+        :raises InvalidSpecifier: When a specifier is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""
@@ -68,12 +70,13 @@ class RobotBrain:
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
+        self._ack_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
         self._core_times: deque[float] = deque(maxlen=LOOP_PERIOD_HISTORY_LENGTH)
         self._last_core_message_time: float | None = None
-        self._use_espresso = use_espresso
+        self.use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
         if heartbeat_interval is not None:
@@ -83,7 +86,6 @@ class RobotBrain:
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
         self._esp_lock = asyncio.Lock()
-        self._checksum_lock = asyncio.Lock()
 
     @property
     def clock_offset(self) -> float | None:
@@ -130,6 +132,12 @@ class RobotBrain:
             if version_select.options:
                 version_select.value = version_select.options[0]
 
+        async def notify_failure(flash: Callable[[], Awaitable[None]]) -> None:
+            try:
+                await flash()
+            except FirmwareFlashError as e:
+                rosys.notify(str(e), 'negative')
+
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
             await self.restart()
@@ -146,11 +154,11 @@ class RobotBrain:
                 .bind_value_to(self.lizard_firmware, 'selected_online_version')
             ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
                 .tooltip('Read all available versions from GitHub')
-            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
+            online_update_button = ui.button(on_click=lambda: notify_failure(online_update)).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'local_description', backward=lambda x: f'Local: {x}')
-            local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
+            local_update_button = ui.button(on_click=lambda: notify_failure(local_update)).props('icon=file_download flat round dense') \
                 .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'core_description', backward=lambda x: f'Core: {x}')
@@ -158,6 +166,7 @@ class RobotBrain:
                 .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'p0_description', backward=lambda x: f'P0: {x}')
+        ui.label().bind_text_from(self.lizard_firmware, 'progress')
 
         def update_visibility() -> None:
             online_update_button.visible = \
@@ -181,14 +190,14 @@ class RobotBrain:
                         ui.notify(await self.esp_pins_core.get_strapping_pins())
                     ui.menu_item('Check Core Strapping Pins', on_click=check_strapping_pins_core) \
                         .tooltip('Check if the Core strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
+                    ui.menu_item('Flash Core', on_click=lambda: notify_failure(self.lizard_firmware.flash_core)) \
                         .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
 
                     async def check_strapping_pins_p0():
                         ui.notify(await self.esp_pins_p0.get_strapping_pins())
                     ui.menu_item('Check P0 Strapping Pins', on_click=check_strapping_pins_p0) \
                         .tooltip('Check if the P0 strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
+                    ui.menu_item('Flash P0', on_click=lambda: notify_failure(self.lizard_firmware.flash_p0)) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
 
                     ui.separator()
@@ -274,19 +283,14 @@ class RobotBrain:
     async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Read the checksum of the startup script that the microcontroller currently holds.
 
-        Requests are serialized, because responses are matched by their ``checksum:`` prefix and would
-        otherwise be delivered to whichever concurrent request happens to wake up first.
-        The timeout must be finite, because an unanswered request would hold the lock
-        and stall all future requests, including the ones sent by ``configure()``.
-
         :param timeout: Response timeout
         :param force: Whether to send the message even if the ESP is not ready
         :return: The checksum, or ``None`` if the timeout is reached or the ESP is not ready
         """
-        async with self._checksum_lock:
-            if not self.is_ready and not force:
-                return None  # NOTE: the ESP may have gone away while we were waiting for the lock
+        try:
             response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=timeout, force=force)
+        except EspNotReadyException:
+            return None
         return response.split()[-1] if response else None
 
     async def restart(self) -> None:
@@ -375,29 +379,33 @@ class RobotBrain:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force: bool = False) -> str | None:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Send a Lizard command to the ESP and await a response.
+
+        Responses carry no request id, so calls that share an ``ack`` are serialized:
+        a call first waits for earlier calls with the same ``ack`` to receive their response or time out.
+        The timeout must be finite, because an unanswered request would otherwise block
+        all later calls with that ``ack``.
 
         :param msg: The Lizard command to send
         :param ack: The first word of the response message to wait for
-        :param timeout: Response timeout
+        :param timeout: Response timeout, counted from sending
         :param force: Whether to send the message even if the ESP is not ready
         :raises EspNotReadyException: When the ESP is not ready and force is ``False``
         :return: The response message or ``None`` if the timeout is reached
         """
-        if not self.is_ready and not force:
-            raise EspNotReadyException('Sending message failed because ESP is not ready')
-        self.waiting_list[ack] = None
-        await self.send(msg, force=force)
-        t0 = rosys.time()
-        while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
-            await rosys.sleep(0.1)
-        return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+        async with self._ack_locks[ack]:
+            self.waiting_list[ack] = None
+            await self.send(msg, force=force)
+            t0 = rosys.time()
+            while self.waiting_list[ack] is None and rosys.time() < t0 + timeout:
+                await rosys.sleep(0.1)
+            return self.waiting_list.pop(ack)
 
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._enable_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "
@@ -445,7 +453,7 @@ class RobotBrain:
     async def reset_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._reset_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "

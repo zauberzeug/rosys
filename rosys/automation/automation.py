@@ -20,6 +20,12 @@ class AutomationStopped(BaseException):
     """
 
 
+def _uninterruptible_depth() -> int:
+    """How many ``@uninterruptible`` functions the currently running automation is inside of."""
+    automation = _CURRENT_AUTOMATION.get()
+    return automation._uninterruptible_depth if automation is not None else 0  # pylint: disable=protected-access
+
+
 def uninterruptible(func: Callable):
     """Decorator to make an async function uninterruptible until it exits.
 
@@ -28,14 +34,14 @@ def uninterruptible(func: Callable):
     @functools.wraps(func)
     async def _wrapped(*args, **kwargs):
         automation = _CURRENT_AUTOMATION.get()
+        if automation is None:
+            return await func(*args, **kwargs)
+        automation._uninterruptible_depth += 1
         try:
-            if automation is not None:
-                automation._uninterruptible_depth += 1
             result = await func(*args, **kwargs)
         finally:
-            if automation is not None:
-                automation._uninterruptible_depth -= 1
-                await asyncio.sleep(0)
+            automation._uninterruptible_depth -= 1
+        await asyncio.sleep(0)  # let a pending pause or stop take effect before the caller continues
         return result
     return _wrapped
 

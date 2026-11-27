@@ -697,11 +697,11 @@ async def test_duration_based_rotation(mcap_dir: Path) -> None:
 @pytest.mark.parametrize('kept_name', ['weeding on the north field.mcap',  # renamed by hand
                                        '20200101_000000_000000_run0001_merged.mcap',  # the merged file of a run
                                        '20200101_000000_000000_run0001_01.mcap'])  # a part's name, filed at the top
-async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_name: str) -> None:
-    """The budget evicts parts (oldest first) before anything at the top level, whatever its name."""
+async def test_disk_budget_deletes_a_kept_recording_older_than_the_parts(mcap_dir: Path, kept_name: str) -> None:
+    """A kept recording older than every part pays for the budget before the running run's parts do."""
     kept = mcap_dir / kept_name
     kept.write_bytes(os.urandom(60 * 1024))
-    os.utime(kept, (0, 0))  # the oldest file of all, yet kept -> deleted last
+    os.utime(kept, (0, 0))
     recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
     for i in range(2):
         path = recorder.parts_dir / f'20200101_000000_000000_run0002_0{i + 1}.mcap'
@@ -712,9 +712,25 @@ async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_nam
     await recorder.stop()  # empty -> new part discarded
 
     remaining = {path.name for path in mcap_dir.rglob('*.mcap')}
-    assert kept.name in remaining
-    assert '20200101_000000_000000_run0002_01.mcap' not in remaining  # the oldest part paid for the budget
+    assert kept.name not in remaining
+    assert '20200101_000000_000000_run0002_01.mcap' in remaining
     assert '20200101_000000_000000_run0002_02.mcap' in remaining
+
+
+async def test_disk_budget_deletes_oldest_first_across_both_folders(mcap_dir: Path) -> None:
+    """With two files to free, the budget takes the oldest part and then the kept recording above it in age."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.06, auto_start=False)  # room for one file
+    oldest_part = recorder.parts_dir / '20200101_000000_000000_run0002_01.mcap'
+    kept = mcap_dir / 'weeding on the north field.mcap'
+    newest_part = recorder.parts_dir / '20200101_000000_000000_run0002_02.mcap'
+    for age, path in enumerate([oldest_part, kept, newest_part]):
+        path.write_bytes(os.urandom(60 * 1024))
+        os.utime(path, (age, age))
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {newest_part.name}
 
 
 async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_dir: Path) -> None:
@@ -733,6 +749,45 @@ async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_di
     await recorder.stop()  # empty -> new part discarded
 
     assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'newest kept.mcap', *part_names}
+
+
+@pytest.mark.parametrize(('max_total_size_mb', 'max_kept_size_mb'), [(0.12, 500), (1000, 0.12)], ids=['total', 'kept'])
+async def test_disk_budget_spares_protected_recordings(mcap_dir: Path,
+                                                       max_total_size_mb: float, max_kept_size_mb: float) -> None:
+    """The oldest kept recording survives either bound while protected; the unprotected one above it pays instead."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=max_total_size_mb,
+                            max_kept_size_mb=max_kept_size_mb, auto_start=False)  # ~126 KiB for the tested bound
+    names = ['protected.mcap', 'unprotected.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset({'protected.mcap'})
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'protected.mcap', 'newest.mcap'}
+    assert sacrificed == []
+
+
+async def test_disk_budget_deletes_protected_recordings_when_nothing_else_is_left(mcap_dir: Path) -> None:
+    """When protected recordings alone exceed the budget, the oldest is deleted and reported, so the disk stays bounded."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+    names = ['oldest.mcap', 'older.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset(names)
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'older.mcap', 'newest.mcap'}
+    assert sacrificed == [mcap_dir / 'oldest.mcap']
 
 
 _LONG_NAME = '_'.join(['word'] * 60)
@@ -848,9 +903,6 @@ async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) ->
 
 async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) -> None:
     """A name from the caller does not turn its files into keepers the budget spares."""
-    kept = mcap_dir / 'weeding on the north field.mcap'
-    kept.write_bytes(os.urandom(60 * 1024))
-    os.utime(kept, (0, 0))
     recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
     recorder.add_topic('/test', _schema('Test', {'payload': {'type': 'string'}}))
     recorder.start(name='mission')
@@ -858,10 +910,13 @@ async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) ->
         recorder.log_message('/test', _json({'payload': os.urandom(1024).hex()}), timestamp_ns=i * NS)
     await recorder.stop()
     mission = recorder.recordings[0]
+    kept = mcap_dir / 'weeding on the north field.mcap'
+    kept.write_bytes(os.urandom(60 * 1024))
 
     recorder.start()
     await recorder.stop()
 
+    assert mission.parent == recorder.parts_dir
     assert not mission.exists()
     assert kept.exists()
 

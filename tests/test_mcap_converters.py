@@ -34,7 +34,7 @@ from rosys.analysis.recording import (
     scalar,
     transform_3d,
 )
-from rosys.geometry import GeoPose, Pose, Pose3d, Rotation, Velocity
+from rosys.geometry import Frame3d, GeoPose, Pose, Pose3d, Rotation, Velocity
 from rosys.hardware.bms_state import BmsState
 from rosys.hardware.gnss import GnssMeasurement
 from rosys.hardware.gnss.nmea import GpsQuality
@@ -293,6 +293,54 @@ async def test_extract_reads_live_state_at_write_time(mcap_dir: Path) -> None:
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message == {'value': 1}
+
+
+async def test_a_pose_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A pose emitted and then moved in place is recorded on ``/pose`` and ``/tf`` at its emitted position."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_pose_topic(recorder, '/pose', event=event, child='base_link')
+    recorder.start()
+    pose = Pose(x=1.0, y=2.0, yaw=0.0, time=1.0)
+    event.emit(pose)
+    pose.x = 5.0
+    await recorder.stop()
+
+    by_schema = dict(_read(_only_file(mcap_dir)))
+    assert by_schema['foxglove.PoseInFrame']['pose']['position']['x'] == 1.0
+    assert by_schema['foxglove.FrameTransform']['translation']['x'] == 1.0
+
+
+async def test_a_frame_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A ``Frame3d`` emitted and then moved and rotated in place is recorded as it was emitted."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/tf', event=event, converter=transform_3d(child='camera'))
+    recorder.start()
+    frame = Frame3d(x=1.0, y=0.0, z=0.5)
+    event.emit(frame)
+    frame.x = 5.0
+    frame.rotation = Rotation.from_euler(0, 0, math.pi / 2)
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message['translation']['x'] == 1.0
+    assert message['rotation']['w'] == pytest.approx(1.0)
+
+
+async def test_a_battery_state_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: Path) -> None:
+    """A ``BmsState`` updated in place after its event is recorded with the emitted values."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/battery', event=event, timestamp=lambda state: state.last_update)
+    recorder.start()
+    state = BmsState(percentage=42.0, voltage=24.0, last_update=3.0)
+    event.emit(state)
+    state.percentage = 10.0
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message['percentage'] == pytest.approx(0.42)
 
 
 async def test_scalar_extract_returning_none_skips_the_message(mcap_dir: Path) -> None:
@@ -588,6 +636,24 @@ async def test_image_annotations_from_detections(mcap_dir: Path) -> None:
     assert {t['text'] for t in message['texts']} == {'weed (0.90)', 'crop (0.80)'}
 
 
+async def test_image_annotations_record_the_detections_present_when_emitted(mcap_dir: Path) -> None:
+    """Detections a second detector adds after the image was emitted stay out of that image's overlay."""
+    image = Image.create_placeholder('x', camera_id='front', time=2.0)
+    image.set_detections('first', Detections(
+        points=[PointDetection(category_name='crop', model_name='m', confidence=0.8, x=5.0, y=6.0)]))
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/camera/front/annotations', event=event, converter=image_annotations())
+    recorder.start()
+    event.emit(image)
+    image.set_detections('second', Detections(
+        points=[PointDetection(category_name='weed', model_name='m', confidence=0.9, x=7.0, y=8.0)]))
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert [t['text'] for t in message['texts']] == ['crop (0.80)']
+
+
 async def test_image_annotations_filters_by_camera_id(mcap_dir: Path) -> None:
     """``image_annotations(camera_id=...)`` skips images from other cameras."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
@@ -636,8 +702,8 @@ async def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> No
     add_event_topic(recorder, '/battery', event=event,
                     timestamp=lambda state: state.last_update, converter=battery_state())
     recorder.start()
-    event.emit(SimpleNamespace(percentage=87.5, voltage=25.2, current=-3.1,
-                               temperature=24.0, is_charging=False, last_update=5.0))
+    event.emit(BmsState(percentage=87.5, voltage=25.2, current=-3.1,
+                        temperature=24.0, is_charging=False, last_update=5.0))
     await recorder.stop()
 
     with open(_only_file(mcap_dir), 'rb') as f:

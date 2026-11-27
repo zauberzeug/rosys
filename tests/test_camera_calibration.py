@@ -249,6 +249,31 @@ def test_projection_with_frame_argument():
         assert np.allclose([frame_point.tuple], frame_array, atol=1e-6)
 
 
+@pytest.mark.parametrize(('camera_z', 'roll', 'target_height'), [
+    (1.0, np.pi, 0.0),
+    (0.0, np.pi, -1.0),
+    (-0.5, np.pi, -1.5),
+    (1.0, 0.0, 2.0),
+])
+def test_project_from_image_relative_to_camera_height(camera_z: float, roll: float, target_height: float):
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=camera_z, roll=roll)
+    assert cam.calibration is not None
+
+    world_point = Point3d(x=0.1, y=0.2, z=target_height)
+    image_point = cam.calibration.project_to_image(world_point)
+    assert image_point is not None
+
+    projected = cam.calibration.project_from_image(image_point, target_height=target_height)
+    assert projected is not None
+    approx(projected.tuple, world_point.tuple)
+
+    # A target plane on the opposite side of the camera (behind the ray) must be rejected.
+    behind_height = camera_z - (target_height - camera_z)
+    assert cam.calibration.project_from_image(image_point, target_height=behind_height) is None
+    assert cam.calibration.project_from_image(image_point, target_height=camera_z) is None
+
+
 def test_fisheye_projection():
     cam, world_points = demo_fisheye_data()
     assert cam.calibration is not None

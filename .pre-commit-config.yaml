@@ -28,5 +28,6 @@ repos:
       - id: mdformat
         args: ["--wrap", "keep", "--number"]
         additional_dependencies:
+          - mdformat-frontmatter
           - mdformat-gfm
           - mdformat-simple-breaks

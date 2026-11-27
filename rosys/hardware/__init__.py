@@ -1,6 +1,7 @@
 from .battery_control import BatteryControlHardware
 from .bluetooth import BluetoothHardware
 from .bms import Bms, BmsHardware, BmsSimulation
+from .bms_can import BatteryPack, BmsCan, BmsCanHardware, BmsCanSimulation
 from .bumper import Bumper, BumperHardware, BumperSimulation
 from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
@@ -8,16 +9,21 @@ from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
 from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuMeasurement, ImuSimulation
+from .lizard_firmware import FirmwareFlashError
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import EspNotReadyException, RobotBrain
 from .serial import SerialHardware
-from .wheels import Wheels, WheelsHardware, WheelsSimulation
+from .wheels import Wheels, WheelsHardware, WheelsSimulation, cap_wheel_speed
 
 __all__ = [
     'BatteryControlHardware',
+    'BatteryPack',
     'BluetoothHardware',
     'Bms',
+    'BmsCan',
+    'BmsCanHardware',
+    'BmsCanSimulation',
     'BmsHardware',
     'BmsSimulation',
     'Bumper',
@@ -30,6 +36,7 @@ __all__ = [
     'EStopSimulation',
     'EspNotReadyException',
     'ExpanderHardware',
+    'FirmwareFlashError',
     'Gnss',
     'GnssHardware',
     'GnssMeasurement',
@@ -51,4 +58,5 @@ __all__ = [
     'Wheels',
     'WheelsHardware',
     'WheelsSimulation',
+    'cap_wheel_speed',
 ]

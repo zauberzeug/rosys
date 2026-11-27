@@ -374,7 +374,7 @@ class Calibration:
         world_array = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
         # Check if the point is in front of the camera
-        sign = objPoints[:, -1] * np.sign(Z)
+        sign = objPoints[:, -1] * np.sign(Z - target_height)
         world_array[sign >= 0, :] = np.nan
 
         # Check if the point is within the reprojection tolerance

@@ -2,6 +2,7 @@ import asyncio
 import gc
 import logging
 import multiprocessing
+import threading
 import weakref
 from collections.abc import AsyncIterator
 from contextlib import nullcontext, suppress
@@ -124,14 +125,6 @@ async def _survives_one_cancellation() -> None:
 
 
 JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
-
-
-@pytest.fixture
-def vision_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
-    logger = logging.getLogger('rosys.vision')  # NOTE: the test log configuration disables propagation to the root
-    logger.addHandler(caplog.handler)
-    yield caplog
-    logger.removeHandler(caplog.handler)
 
 
 async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,
@@ -471,6 +464,36 @@ async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integ
             await device.shutdown()
 
 
+async def test_usb_device_releases_its_capture_only_after_a_running_read(rosys_integration):
+    """A cancelled read keeps running in its thread; releasing the capture meanwhile would race with it."""
+    read_started = threading.Event()
+    read_may_end = threading.Event()
+    calls: list[str] = []
+
+    class BlockingCapture(FakeCapture):
+        def read(self):
+            read_started.set()
+            read_may_end.wait(timeout=5)
+            calls.append('read')
+            return super().read()
+
+        def release(self) -> None:
+            calls.append('release')
+            super().release()
+
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: BlockingCapture()), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert await asyncio.to_thread(read_started.wait, 5), 'device did not start reading'
+            asyncio.get_running_loop().call_later(0.1, read_may_end.set)
+            await device.shutdown()
+            assert calls == ['read', 'release']
+        finally:
+            read_may_end.set()
+            await device.shutdown()
+
+
 async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration):
     captures: list[FakeCapture] = []
 
@@ -545,7 +568,8 @@ async def test_simulated_camera_passes_params_to_device(rosys_integration):
     await camera.disconnect()
 
 
-async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_mjpeg_device_reconnects_when_its_reader_fails(caplog):
     server = FlakyMjpegServer(frames_per_connection=None)
     await server.start()
     device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
@@ -562,7 +586,7 @@ async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
         await forward_until(lambda: server.connections >= 2 and device.is_connected,
                             message='expected the device to reconnect after its reader failed')
         assert any('receiving from the stream worker failed: RuntimeError: received 0 items of ancdata'
-                   in record.getMessage() for record in vision_log.records), 'expected the failure to be reported'
+                   in record.getMessage() for record in caplog.records), 'expected the failure to be reported'
     finally:
         await device.shutdown()
         await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
@@ -597,25 +621,27 @@ async def test_mjpeg_device_backs_off_after_401(rosys_integration):
         await server.stop()
 
 
-async def test_mjpeg_device_reports_an_unreachable_camera_without_a_traceback(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_mjpeg_device_reports_an_unreachable_camera_without_a_traceback(caplog):
     device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1',
                          on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
     try:
-        await forward_until(lambda: any('cannot reach' in record.getMessage() for record in vision_log.records),
+        await forward_until(lambda: any('cannot reach' in record.getMessage() for record in caplog.records),
                             message='expected the device to report that it cannot reach the camera')
-        assert not [record for record in vision_log.records if record.exc_info], (
+        assert not [record for record in caplog.records if record.exc_info], (
             'expected no traceback for a camera that is simply not there'
         )
     finally:
         await device.shutdown()
 
 
-async def test_mjpeg_device_warns_about_a_stalled_stream(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_mjpeg_device_warns_about_a_stalled_stream(caplog):
     device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1',
                          on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
     try:
         device._end_session(device.url, StreamEndedError(EndReason.STALLED))  # pylint: disable=protected-access
-        stalled = [record for record in vision_log.records if 'stopped sending data' in record.getMessage()]
+        stalled = [record for record in caplog.records if 'stopped sending data' in record.getMessage()]
         assert [record.levelno for record in stalled] == [logging.WARNING]
     finally:
         await device.shutdown()
@@ -643,15 +669,16 @@ async def test_mjpeg_device_retries_at_a_new_address_despite_back_off(rosys_inte
         await new_server.stop()
 
 
-async def test_a_reconnect_interval_that_can_be_honored_is_kept(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_a_reconnect_interval_that_can_be_honored_is_kept(caplog):
     device = MjpegDevice(GOODCAM_MAC, on_new_image_data=lambda data, timestamp: None, reconnect_interval=2.5)
     try:
         assert device.reconnect_interval == 2.5
-        assert not [record for record in vision_log.records if 'too short' in record.getMessage()]
+        assert not [record for record in caplog.records if 'too short' in record.getMessage()]
 
         device.reconnect_interval = 0.0
         assert device.reconnect_interval == MIN_RECONNECT_INTERVAL, 'expected a later assignment to be held too'
-        assert [record for record in vision_log.records if 'too short' in record.getMessage()]
+        assert [record for record in caplog.records if 'too short' in record.getMessage()]
     finally:
         await device.shutdown()
 
@@ -709,7 +736,7 @@ async def test_mjpeg_device_invokes_on_connect_per_session(rosys_integration):
         await server.stop()
 
 
-async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integration, vision_log):
+async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integration, caplog):
     server = FlakyMjpegServer(frames_per_connection=None)
     await server.start()
     frames: list[bytes] = []
@@ -724,7 +751,7 @@ async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integrat
     try:
         await forward_until(lambda: len(frames) >= 3, message='expected frames despite the failing on_connect')
         assert server.connections == 1, 'expected the failing on_connect not to end the session'
-        assert [record for record in vision_log.records if 'on_connect callback failed' in record.getMessage()]
+        assert [record for record in caplog.records if 'on_connect callback failed' in record.getMessage()]
     finally:
         await device.shutdown()
         await server.stop()
@@ -885,7 +912,8 @@ async def test_mjpeg_device_is_connected_once_the_first_frame_arrives(rosys_inte
             await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
 
 
-async def test_mjpeg_device_ignores_a_frame_that_arrives_while_it_is_shutting_down(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_mjpeg_device_ignores_a_frame_that_arrives_while_it_is_shutting_down(caplog):
     connect_calls = 0
 
     def count_connect() -> None:
@@ -903,7 +931,7 @@ async def test_mjpeg_device_ignores_a_frame_that_arrives_while_it_is_shutting_do
             assert not device.is_connected
             assert device._state is CaptureState.STOPPED  # pylint: disable=protected-access
             assert connect_calls == 0, 'on_connect fired for a device that was being shut down'
-            assert not [record for record in vision_log.records if record.levelno >= logging.ERROR], (
+            assert not [record for record in caplog.records if record.levelno >= logging.ERROR], (
                 'expected no error from a stream that opened during shutdown'
             )
         finally:
@@ -1212,14 +1240,15 @@ async def test_rtsp_camera_is_active_without_known_address(rosys_integration):
         await camera.disconnect()
 
 
-async def test_usb_device_waits_quietly_for_a_missing_video_device(vision_log):
-    vision_log.set_level(logging.DEBUG, logger='rosys.vision')
+@pytest.mark.usefixtures('rosys_integration')
+async def test_usb_device_waits_quietly_for_a_missing_video_device(caplog):
+    caplog.set_level(logging.DEBUG, logger='rosys.vision')
     with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None):
         device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
         try:
-            await forward_until(lambda: any('retrying' in record.getMessage() for record in vision_log.records),
+            await forward_until(lambda: any('retrying' in record.getMessage() for record in caplog.records),
                                 message='expected the device to say why it is waiting')
-            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            retry_records = [record for record in caplog.records if 'retrying' in record.getMessage()]
             assert all('no video device found' in record.getMessage() for record in retry_records)
             assert all(record.levelno == logging.DEBUG for record in retry_records), \
                 'expected a missing video device to be logged at DEBUG only'
@@ -1227,17 +1256,18 @@ async def test_usb_device_waits_quietly_for_a_missing_video_device(vision_log):
             await device.shutdown()
 
 
-async def test_usb_device_warns_once_about_a_busy_video_device(vision_log):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_usb_device_warns_once_about_a_busy_video_device(caplog):
     with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
             patch.object(UsbDevice, 'create_capture', lambda _device_node: None):
         device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
         try:
-            await forward_until(lambda: sum('retrying' in record.getMessage() for record in vision_log.records) >= 2,
+            await forward_until(lambda: sum('retrying' in record.getMessage() for record in caplog.records) >= 2,
                                 message='expected at least two attempts to open the busy device')
-            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            retry_records = [record for record in caplog.records if 'retrying' in record.getMessage()]
             assert all('cannot open /dev/video0' in record.getMessage() for record in retry_records)
             assert all(record.levelno == logging.INFO for record in retry_records)
-            assert sum('another process' in record.getMessage() for record in vision_log.records) == 1, \
+            assert sum('another process' in record.getMessage() for record in caplog.records) == 1, \
                 'expected the hint about another process exactly once'
         finally:
             await device.shutdown()
@@ -1534,12 +1564,12 @@ async def test_mjpeg_device_factory_builds_the_vendor_device(rosys_integration, 
             await device.shutdown()
 
 
-async def test_mjpeg_device_factory_warns_about_an_unknown_vendor(rosys_integration, vision_log):
+async def test_mjpeg_device_factory_warns_about_an_unknown_vendor(rosys_integration, caplog):
     with stalled_mjpeg_stream():
         device = MjpegDeviceFactory.create(UNKNOWN_VENDOR_MAC, '127.0.0.1:1',
                                            on_new_image_data=lambda data, timestamp: None)
         try:
-            assert [record for record in vision_log.records if 'no stream URL known' in record.getMessage()], \
+            assert [record for record in caplog.records if 'no stream URL known' in record.getMessage()], \
                 'expected the factory to say that this camera cannot be reached'
         finally:
             await device.shutdown()
@@ -1553,7 +1583,7 @@ def test_settings_of_a_camera_without_an_address_raise_a_domain_error():
         _ = device.settings_interface
 
 
-async def test_mjpeg_device_reports_a_missing_address_without_a_traceback(rosys_integration, vision_log):
+async def test_mjpeg_device_reports_a_missing_address_without_a_traceback(rosys_integration, caplog):
     async def unknown_address(self) -> None:
         raise CameraAddressUnknown('no address')
 
@@ -1562,10 +1592,10 @@ async def test_mjpeg_device_reports_a_missing_address_without_a_traceback(rosys_
                              reconnect_interval=0.2)
         try:
             await forward_until(lambda: any('no address known yet' in record.getMessage()
-                                            for record in vision_log.records),
+                                            for record in caplog.records),
                                 step=0.1, real_step=0.02,
                                 message='device did not report the missing address')
-            assert not [record for record in vision_log.records if record.exc_info], \
+            assert not [record for record in caplog.records if record.exc_info], \
                 'expected a missing address to be reported without a traceback'
         finally:
             await device.shutdown()

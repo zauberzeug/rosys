@@ -51,6 +51,8 @@ class Steerer:
         if self.state != State.STEERING:
             return
         self.log.info('stop steering')
+        self.linear_speed = 0.0
+        self.angular_speed = 0.0
         self.state = State.STOPPING
         self.STEERING_STOPPED.emit()
 

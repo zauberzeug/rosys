@@ -14,6 +14,7 @@ from mcap.writer import CompressionType, Writer
 from nicegui import Event, ui
 
 from ... import rosys
+from .budget import StoredRecording, select_deletions
 from .indexing import is_indexed, reindex
 from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
 from .naming import TIMESTAMP_FORMAT, ensure_plain_file_name
@@ -99,10 +100,16 @@ class McapRecorder:
     output directory is a kept recording (renamed, merged or placed there deliberately). The
     folder decides the kind, not the name. Peak disk usage is ``max_total_size_mb +
     max_part_size_mb``: the budget is enforced only before a part is opened, so the growing
-    part can exceed it by up to one part's worth. The budget deletes parts (oldest first)
-    before kept recordings, which have a bound of their own so they cannot eat the rolling
-    window. A merge holds its sources open, so the space the budget frees during one only
-    returns when the merge finishes, and the peak then also carries the merge's size.
+    part can exceed it by up to one part's worth. The budget deletes the oldest recording
+    first, whichever folder it sits in; kept recordings have a bound of their own so they
+    cannot eat the rolling window. A merge holds its sources open, so the space the budget
+    frees during one only returns when the merge finishes, and the peak then also carries
+    the merge's size.
+
+    The budget spares kept recordings named in :attr:`protected` (e.g. not uploaded yet) unless they
+    alone exceed it; then it deletes them too and emits :attr:`PROTECTED_RECORDING_DELETED`. They count
+    toward ``max_kept_size_mb`` without ever being deleted by it, so protecting more than that bound
+    silently deletes every other kept recording but the newest: keep protection well below it.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -152,10 +159,10 @@ class McapRecorder:
             (default: no duration-based rotation). Checked as messages are written, so an idle
             recording only rotates once data flows again.
         :param max_total_size_mb: disk budget for the output directory including ``parts/``; the oldest
-            recordings are deleted before a part is opened to stay under it, parts first. Peak disk usage
+            recordings are deleted before a part is opened to stay under it, oldest first. Peak disk usage
             is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
         :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
-            deleted, sparing the newest (the one just filed away) however large it is.
+            deleted, sparing the newest (the one just filed away) however large it is and every protected one.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
             less often).
         :param flush_interval: seconds between background flushes of the queue to disk.
@@ -185,6 +192,11 @@ class McapRecorder:
         """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
         self.RECORDING_STOPPED = Event[Path]()
         """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
+        self.PROTECTED_RECORDING_DELETED = Event[Path]()
+        """the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)"""
+
+        self.protected: frozenset[str] = frozenset()
+        """names of kept recordings the disk budget spares; replace it whole, the writer thread reads it"""
 
         self._declared_topics: set[str] = set()
         self._selected_topics: set[str] | None = None
@@ -375,11 +387,10 @@ class McapRecorder:
     async def reindex_unindexed(self) -> None:
         """Rebuild the index of every unindexed recording on a background thread."""
         unindexed = await rosys.run.io_bound(self.unindexed_recordings)  # per-file open + index probe: off the loop
-        for path in unindexed or []:
+        for path in unindexed:
             self.log.warning('reindexing unindexed recording: %s', path.name)
             recovered = await rosys.run.io_bound(reindex, path)
-            if recovered is not None:
-                self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
+            self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
 
     async def merge(self, sources: list[Path], name: str, *, start_time_ns: int = 0) -> Path | None:
         """Merge finished recordings into the kept recording ``<name>.mcap``, deleting them once it is in place.
@@ -394,7 +405,6 @@ class McapRecorder:
         :raises ValueError: if ``name`` is no plain file name, or a source is no finished recording of
             this recorder.
         :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
-        :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
         """
         ensure_plain_file_name(name)
         target = self.output_dir / f'{name}.mcap'
@@ -405,12 +415,9 @@ class McapRecorder:
             raise FileExistsError(f'{target.name} exists or is being merged already')
         self._merging.add(name)
         try:
-            result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
+            count, undeleted = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
         finally:
             self._merging.discard(name)
-        if result is None:
-            raise RuntimeError('the merge did not run, the app is shutting down')
-        count, undeleted = result
         if not count:
             return None
         self.log.info('merged %d recordings into %s (%d messages)', len(sources), target.name, count)
@@ -507,9 +514,7 @@ class McapRecorder:
 
         The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
         the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
-        via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, which refuses
-        work once the app is stopping (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
-        never blocks the event loop; ``start()`` is refused meanwhile. A final part without
+        via ``rosys.run.io_bound``, so it never blocks the event loop; ``start()`` is refused meanwhile. A final part without
         messages is discarded, otherwise ``RECORDING_STOPPED`` is emitted with its path.
         """
         if not self._is_recording:
@@ -518,7 +523,7 @@ class McapRecorder:
         self._is_stopping = True
         try:
             self._stop_sources()
-            file_path, file_message_count = await asyncio.to_thread(self._drain_and_close)
+            file_path, file_message_count = await rosys.run.io_bound(self._drain_and_close)
         finally:
             self._is_stopping = False
         if file_path is None:
@@ -818,31 +823,26 @@ class McapRecorder:
     def _enforce_disk_budget(self) -> None:
         """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
 
-        The kept bound spares the newest kept recording; the total is then met by parts first, oldest first.
+        See :func:`.budget.select_deletions`.
         """
-        parts: list[tuple[Path, int, float]] = []
-        kept: list[tuple[Path, int, float]] = []
+        protected = self.protected
+        recordings: list[StoredRecording] = []
         for path in self._recording_files():
             try:
                 stat = path.stat()
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
-            (parts if path.parent == self.parts_dir else kept).append((path, stat.st_size, stat.st_mtime))
-        parts.sort(key=lambda item: item[2])
-        kept.sort(key=lambda item: item[2])
-        deleted: list[tuple[Path, int, float]] = []
-        kept_size = sum(size for _, size, _ in kept)
-        while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
-            deleted.append(kept.pop(0))
-            kept_size -= deleted[-1][1]
-        remaining = parts + kept
-        total = sum(size for _, size, _ in remaining)
-        while total > self.max_total_size and remaining:
-            deleted.append(remaining.pop(0))
-            total -= deleted[-1][1]
-        for path, size, _ in deleted:
-            path.unlink(missing_ok=True)
-            self.log.info('deleted old recording: %s (freed %.1f MB)', path.name, size / 1_048_576)
+            kept = path.parent == self.output_dir
+            recordings.append(StoredRecording(path, stat.st_size, stat.st_mtime, kept, kept and path.name in protected))
+        deletions = select_deletions(recordings, max_kept_size=self.max_kept_size, max_total_size=self.max_total_size)
+        for recording in deletions.unprotected:
+            recording.path.unlink(missing_ok=True)
+            self.log.info('deleted old recording: %s (freed %.1f MB)', recording.path.name, recording.size / 1_048_576)
+        for recording in deletions.protected:
+            recording.path.unlink(missing_ok=True)
+            self.log.warning('deleted protected recording %s to stay within the disk budget (freed %.1f MB)',
+                             recording.path.name, recording.size / 1_048_576)
+            self._emit_on_loop(self.PROTECTED_RECORDING_DELETED.emit, recording.path)
 
     def _remove_orphaned_temporary_files(self) -> None:
         """Remove reindex and merge temp files left by a crash. Run once at construction, never during operation.
@@ -915,9 +915,7 @@ class McapRecorder:
 
     async def _refresh_stats(self) -> None:
         """Refresh the cached directory stats off the event loop, then rebuild the stats grid."""
-        stats = await rosys.run.io_bound(self._collect_disk_stats)
-        if stats is not None:
-            self._disk_stats = stats
+        self._disk_stats = await rosys.run.io_bound(self._collect_disk_stats)
         self._stats_ui.refresh()
 
     def _collect_disk_stats(self) -> _DiskStats:

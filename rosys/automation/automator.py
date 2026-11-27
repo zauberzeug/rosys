@@ -1,4 +1,4 @@
-import asyncio
+import inspect
 import logging
 from collections.abc import Callable, Coroutine
 from typing import Literal
@@ -109,7 +109,7 @@ class Automator:
         if self.automation is not automation and self.automation is not None and not self.automation.is_stopped:
             return  # a new automation owns the robot; the old one's cleanup must not override its commands
         if self._on_interrupt:
-            if asyncio.iscoroutinefunction(self._on_interrupt):
+            if inspect.iscoroutinefunction(self._on_interrupt):
                 await self._on_interrupt()
             else:
                 self._on_interrupt()

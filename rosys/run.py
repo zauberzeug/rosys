@@ -9,7 +9,7 @@ from collections.abc import Callable, Coroutine, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial, wraps
-from inspect import signature
+from inspect import iscoroutinefunction, signature
 from pathlib import Path
 from typing import Any, ParamSpec, TypeVar
 
@@ -21,14 +21,13 @@ from .helpers import is_stopping
 P = ParamSpec('P')
 R = TypeVar('R')
 
-running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
+# NOTE: in tests, forward() holds the clock and rosys.sleep parks its sleepers while a job runs
+running_cpu_bound_processes: list[str] = []
 running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    # NOTE: deliberately a wrapper, not an alias: rosys owns the `R | None` contract and decides here what to do
-    # when NiceGUI 4.0 starts raising CancelledError instead of returning None
+async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     return await run.io_bound(callback, *args, **kwargs)
 
 
@@ -40,7 +39,7 @@ def awaitable(func: Callable) -> Callable:
     return inner
 
 
-async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
+async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     with cpu():
         return await run.cpu_bound(callback, *args, **kwargs)
 
@@ -185,7 +184,7 @@ async def retry(func: Callable, *,
                 result = on_failed(OnFailedArguments(attempt=attempt, max_attempts=max_attempts))
             else:
                 result = on_failed()
-            if asyncio.iscoroutinefunction(on_failed):
+            if iscoroutinefunction(on_failed):
                 await result
     func_name = func.func.__name__ if isinstance(func, partial) else func.__name__
     raise RuntimeError(f'Running {func_name} failed.')

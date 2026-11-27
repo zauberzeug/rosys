@@ -1,6 +1,6 @@
 # pylint: disable=redefined-outer-name,unused-argument
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from nicegui import core, run
@@ -13,13 +13,15 @@ from rosys.geometry import GeoPoint, GeoReference, Prism
 from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.testing import helpers, log_configuration
+from rosys.vision import image_route
 
 
 @pytest.fixture
 async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
+    image_route.reset_encodings()
     await rosys.startup()
     yield
     await rosys.shutdown()
@@ -83,6 +85,8 @@ def setup_run_pool() -> None:
 
 
 @pytest.fixture
-def geo_reference() -> None:
-    geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
-    GeoReference.update_current(geo_reference)
+def geo_reference() -> Generator[None, None, None]:
+    previous_reference = GeoReference.current
+    GeoReference.current = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
+    yield
+    GeoReference.current = previous_reference

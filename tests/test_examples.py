@@ -27,7 +27,7 @@ def check(path: Path, *, timeout: float = 15.0) -> bool:
     try:
         script.terminate()
         script.wait(1)
-    except (ProcessLookupError, sh.SignalException_SIGKILL, sh.TimeoutException):
+    except (ProcessLookupError, sh.SignalException_SIGTERM, sh.SignalException_SIGKILL, sh.TimeoutException):
         pass
 
     if 'Traceback' in output:

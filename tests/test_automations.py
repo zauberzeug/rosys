@@ -64,6 +64,158 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     assert cause == ['an exception occurred in an automation']
 
 
+async def test_first_completed_waits_for_an_uninterruptible_sibling(automator: Automator):
+    """A finished coroutine must not cut short a sibling that is mid-``@uninterruptible``."""
+    events: list[str] = []
+
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+        events.append('quick done')
+
+    @rosys.automation.uninterruptible
+    async def slow() -> None:
+        for _ in range(10):
+            await rosys.sleep(0.1)
+        events.append('slow done')
+
+    automator.start(rosys.automation.parallelize(quick(), slow(), return_when_first_completed=True))
+    await forward(seconds=3.0)
+
+    assert events == ['quick done', 'slow done']
+    assert automator.is_stopped
+
+
+async def test_first_completed_inside_an_uninterruptible_caller(automator: Automator):
+    """A section the caller is in must not hold the first-completed stop back."""
+    events: list[str] = []
+
+    async def bounded() -> None:
+        await rosys.sleep(0.2)
+        events.append('bounded done')
+
+    async def watcher() -> None:
+        try:
+            while True:
+                await rosys.sleep(0.1)
+        finally:
+            events.append('watcher stopped')
+
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.automation.parallelize(bounded(), watcher(), return_when_first_completed=True)
+        events.append('step done')
+
+    automator.start(step())
+    await forward(seconds=3.0)
+
+    assert events == ['bounded done', 'watcher stopped', 'step done']
+    assert automator.is_stopped
+
+
+async def test_stopping_while_first_completed_waits_for_an_uninterruptible_sibling(automator: Automator):
+    """An external stop during the held-back phase must not be injected a second time into a sibling's cleanup."""
+    events: list[str] = []
+
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+        events.append('quick done')
+
+    @rosys.automation.uninterruptible
+    async def slow() -> None:
+        await rosys.sleep(1.0)
+        events.append('slow done')
+
+    async def third() -> None:
+        try:
+            while True:
+                await rosys.sleep(0.1)
+        finally:
+            events.append('third cleanup started')
+            await rosys.sleep(0.5)
+            events.append('third cleanup finished')
+
+    automator.start(rosys.automation.parallelize(quick(), slow(), third(), return_when_first_completed=True))
+    await forward(seconds=0.5)
+    automator.stop(because='test')
+    await forward(seconds=3.0)
+
+    assert events == ['quick done', 'slow done', 'third cleanup started', 'third cleanup finished']
+    assert automator.is_stopped
+
+
+@pytest.mark.parametrize('pending_stop', ['first_completed', 'stop'])
+async def test_a_failure_inside_an_uninterruptible_section_is_not_replaced_by_a_pending_stop(
+        automator: Automator, pending_stop: Literal['first_completed', 'stop']):
+    """A stop waiting for the section, from a finished sibling or the automator, must not swallow its failure."""
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the step broke')
+
+    if pending_stop == 'first_completed':
+        automator.start(rosys.automation.parallelize(quick(), step(), return_when_first_completed=True))
+    else:
+        automator.start(step())
+        await forward(seconds=0.2)
+        automator.stop(because='test')
+    with pytest.raises(AssertionError, match='the step broke'):
+        await forward(seconds=3.0)
+    assert isinstance(automator.last_exception, RuntimeError)
+
+
+async def test_a_held_back_failure_is_not_replaced_by_a_failing_section(automator: Automator):
+    """When the uninterruptible sibling fails as well, the failure that came first is the one reported."""
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the step broke')
+
+    async def flaky() -> None:
+        await rosys.sleep(0.2)
+        raise ValueError('flaky broke')
+
+    automator.start(rosys.automation.parallelize(step(), flaky()))
+    with pytest.raises(AssertionError, match='flaky broke'):
+        await forward(seconds=3.0)
+    assert isinstance(automator.last_exception, ValueError)
+    assert isinstance(automator.last_exception.__cause__, RuntimeError)
+
+
+@pytest.mark.parametrize('return_when_first_completed', [False, True])
+async def test_a_failing_sibling_waits_for_an_uninterruptible_sibling(automator: Automator,
+                                                                      return_when_first_completed: bool):
+    """A failure stops the others only once the section has ended, also while a first-completed stop is held back."""
+    events: list[str] = []
+
+    async def timeout() -> None:
+        await rosys.sleep(0.2)
+        events.append('timeout done')
+
+    @rosys.automation.uninterruptible
+    async def step() -> None:
+        try:
+            await rosys.sleep(1.0)
+            events.append('step done')
+        finally:
+            events.append('cleanup started')
+            await rosys.sleep(0.1)
+            events.append('cleanup finished')
+
+    async def flaky() -> None:
+        await rosys.sleep(0.3)
+        raise ValueError('flaky broke')
+
+    automator.start(rosys.automation.parallelize(timeout(), step(), flaky(),
+                                                 return_when_first_completed=return_when_first_completed))
+    await forward(seconds=3.0, fail_on_automation_failure=False)
+
+    assert events == ['timeout done', 'step done', 'cleanup started', 'cleanup finished']
+    assert isinstance(automator.last_exception, ValueError)
+
+
 async def test_a_raising_automation_stops_forwarding(automator: Automator):
     """Forwarding stops at the failure instead of stepping through the whole span it was given."""
     async def run() -> None:
@@ -461,7 +613,7 @@ async def test_async_finally_runs_when_stopped_while_parked_on_future(automator:
         """Awaitable that yields an unresolved ``Future`` like production ``asyncio.sleep``, resolved next tick."""
 
         def __await__(self):
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             future = loop.create_future()
             loop.call_soon(future.set_result, None)
             return (yield from future.__await__())
