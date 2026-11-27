@@ -107,13 +107,18 @@ def root() -> None:
 
 logging.basicConfig(level=logging.INFO)
 
+gmsl_camera_provider = rosys.vision.GmslCameraProvider()
 simulated_camera_provider = rosys.vision.SimulatedCameraProvider()
 simulated_camera_provider.add_cameras(1)
 providers: list[rosys.vision.CameraProvider] = [
     rosys.vision.RtspCameraProvider(),
     rosys.vision.MjpegCameraProvider(),
     rosys.vision.UsbCameraProvider(),
+    gmsl_camera_provider,
     simulated_camera_provider,
 ]
+
+# On a Jetson, register the connected GMSL cameras by their Argus sensor-id, e.g.:
+# gmsl_camera_provider.add_camera(rosys.vision.GmslCamera(id='gmsl-0', sensor_id=0))
 
 ui.run(root, title='RoSys', port=8080)

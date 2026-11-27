@@ -10,6 +10,7 @@ from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Autoupload, BatchImageMetadata, Detector, ImageState, ImageTransmissionFormat
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
+from .gmsl_camera import GmslCamera, GmslCameraProvider
 from .image import Image, ImageArray, ImageSize
 from .image_masks import ImageMasks
 from .image_processing import DEFAULT_JPEG_QUALITY, validate_jpeg_quality
@@ -43,6 +44,8 @@ __all__ = [
     'Detector',
     'DetectorHardware',
     'DetectorSimulation',
+    'GmslCamera',
+    'GmslCameraProvider',
     'Image',
     'ImageArray',
     'ImageMasks',
