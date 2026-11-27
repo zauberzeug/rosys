@@ -346,6 +346,7 @@ class FakeCapture:
         self.props: dict = {cv2.CAP_PROP_CONVERT_RGB: 1}  # like OpenCV, decode frames unless told otherwise
         self.failing_reads = failing_reads
         self.reads = 0
+        self.set_calls: list = []  # the properties set so far, in order
 
     def isOpened(self) -> bool:  # cv2 API name
         return self._opened
@@ -363,6 +364,7 @@ class FakeCapture:
         return self.props.get(prop, 0.0)
 
     def set(self, prop, value) -> bool:
+        self.set_calls.append(prop)
         self.props[prop] = value
         return True
 
@@ -600,7 +602,7 @@ async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_in
             self._frame = np.frombuffer(JPEG_FRAME, dtype=np.uint8).reshape(1, -1)  # read() yields raw JPEG bytes
 
     cpu_bound = AsyncMock()
-    with fake_video_device(JpegCapture, v4l_outputs=V4L2_CTL_OUTPUTS['current']), \
+    with fake_video_device(JpegCapture, v4l_outputs=V4L2_CTL_OUTPUTS['current']) as captures, \
             patch('rosys.run.cpu_bound', cpu_bound):
         camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
         await camera.connect()
@@ -609,6 +611,9 @@ async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_in
                                 message='camera did not decode any MJPEG frame')
             assert camera.images[0].array.shape == (8, 8, 3)
             cpu_bound.assert_not_called()
+            set_calls = captures[0].set_calls
+            assert set_calls.index(cv2.CAP_PROP_FOURCC) > set_calls.index(cv2.CAP_PROP_FRAME_HEIGHT), \
+                'MJPEG must be negotiated after the resolution is applied'
         finally:
             await camera.disconnect()
 
