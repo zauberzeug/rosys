@@ -407,7 +407,9 @@ async def test_usb_device_reconnects_after_disconnect(rosys_integration):
             await device.shutdown()
 
 
-async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(rosys_integration):
+@pytest.mark.parametrize('cancellation_lost', [False, True], ids=['cancelled', 'cancellation_lost'])
+async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(rosys_integration,
+                                                                             cancellation_lost: bool):
     probing = asyncio.Event()
     finish_probe = asyncio.Event()
 
@@ -416,7 +418,9 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
         try:
             await finish_probe.wait()
         except asyncio.CancelledError:
-            pass  # NOTE: like rosys.run.sh, a cancelled v4l2-ctl call returns instead of raising
+            if not cancellation_lost:
+                raise
+            # NOTE: on Python 3.11, asyncio.wait_for in rosys.run.sh can swallow a cancellation racing the result
         return ''
 
     frames: list = []
