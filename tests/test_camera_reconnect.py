@@ -510,6 +510,30 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
             assert not frames, 'the capture loop resumed streaming after shutdown'
 
 
+async def test_usb_device_counts_as_connected_only_after_the_mjpeg_switch(rosys_integration):
+    """The switch restarts the stream in a thread; parameters must wait for it, and a shutdown must release the capture."""
+    switching = threading.Event()
+    finish_switch = threading.Event()
+
+    class SlowSwitchingCapture(FakeCapture):
+        def set(self, prop, value) -> bool:
+            if prop == cv2.CAP_PROP_FOURCC:
+                switching.set()
+                finish_switch.wait(timeout=5)
+            return super().set(prop, value)
+
+    async with fake_usb_device(SlowSwitchingCapture, v4l_outputs=V4L2_CTL_OUTPUTS['current']) as (device, captures, frames):
+        try:
+            assert await asyncio.to_thread(switching.wait, 5), 'device did not switch to MJPEG'
+            assert not device.is_connected, 'the device counted as connected while the MJPEG switch was running'
+            asyncio.get_running_loop().call_later(0.1, finish_switch.set)
+            await device.shutdown()
+            assert not captures[0].isOpened(), 'the capture was not released after a shutdown during the switch'
+            assert not frames, 'the capture loop streamed after shutdown'
+        finally:
+            finish_switch.set()
+
+
 @pytest.mark.parametrize('outputs, capture, expect_jpeg', [
     (V4L2_CTL_OUTPUTS['current'], FakeCapture, True),
     (V4L2_CTL_OUTPUTS['legacy'], FakeCapture, True),

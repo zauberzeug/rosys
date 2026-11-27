@@ -127,17 +127,18 @@ class UsbDevice(CaptureDevice):
         self._device_node = device_node
         try:
             await self.load_value_ranges()
+            if self._keeps_running():
+                # NOTE before the parameters, so their read-back reflects the MJPEG stream;
+                # in a thread, since OpenCV restarts the stream for the switch
+                await rosys.run.io_bound(self._set_video_format, capture)
         except BaseException:
             await rosys.run.io_bound(self._release_capture, capture)
             raise
-        if not self._keeps_running():  # shut down while probing
+        if not self._keeps_running():  # shut down while probing the formats or switching to MJPEG
             await rosys.run.io_bound(self._release_capture, capture)
             return
         self.log.info('[%s] connected on %s', self.uid, device_node)
         self._capture = capture  # NOTE only now the device counts as connected and accepts parameters
-        # NOTE before the parameters, so their read-back reflects the MJPEG stream;
-        # in a thread, since OpenCV restarts the stream for the switch
-        await rosys.run.io_bound(self._set_video_format)
         await self._enter_streaming()
 
     async def _release(self) -> None:
@@ -154,9 +155,9 @@ class UsbDevice(CaptureDevice):
         with self._capture_lock:
             capture.release()
 
-    def _set_video_format(self) -> None:
+    def _set_video_format(self, capture: cv2.VideoCapture) -> None:
         with self._capture_lock:  # a release from shutdown() must wait for the format switch
-            self.set_video_format()
+            self.set_video_format(capture)
 
     async def _tear_down_session(self) -> None:
         await self._release()
@@ -193,27 +194,31 @@ class UsbDevice(CaptureDevice):
             return ''
         cmd = ['v4l2-ctl', '-d', self._device_node]
         cmd.extend(args)
-        return await rosys.run.sh(cmd)
+        # NOTE querying all controls can take a while on a loaded system; a timeout would leave the camera on the raw format
+        return await rosys.run.sh(cmd, timeout=5)
 
-    def set_video_format(self) -> None:
+    def set_video_format(self, capture: cv2.VideoCapture | None = None) -> None:
+        """Switch the capture (by default the connected one) to MJPEG if the camera offers it."""
+        if capture is None:
+            capture = self._capture
         self._image_is_jpg = False
-        if self._capture is None or 'MJPG' not in self._video_formats:
+        if capture is None or 'MJPG' not in self._video_formats:
             return
         # NOTE enforcing motion jpeg for now
-        if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-            self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:  # the driver may refuse MJPEG, e.g. at this resolution
+        if capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+            capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            if capture.get(cv2.CAP_PROP_FOURCC) != MJPG:  # the driver may refuse MJPEG, e.g. at this resolution
                 self.log.warning('[%s] could not switch to MJPEG; staying with the raw format', self.uid)
                 return
         # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-        if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-            self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:  # decoded frames must not pass as JPEG bytes
+        if capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+            capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            if capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:  # decoded frames must not pass as JPEG bytes
                 self.log.warning('[%s] could not disable frame decoding; passing on decoded MJPEG frames', self.uid)
                 return
         # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-        if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-            self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        if capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+            capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self._image_is_jpg = True
 
     def set_auto_exposure(self, auto: bool) -> None:
