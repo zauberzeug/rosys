@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -502,6 +502,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1612,6 +1640,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rosys.analysis.McapRecorder.protected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.analysis.McapRecorder.recordings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2114,22 +2153,23 @@
 <a href="#rosys.analysis.McapRecorder" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">McapRecorder</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">output_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;~/.rosys/mcap&quot;</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"~/.rosys/mcap"</span><span class="p">,</span>
     <span class="n">max_part_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
     <span class="n">max_part_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_total_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
     <span class="n">max_kept_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span>
     <span class="n">flush_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys&quot;</span><span class="p">,</span>
-    <span class="n">library</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys-mcap-recorder&quot;</span><span class="p">,</span>
-    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys.mcap_recorder&quot;</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys"</span><span class="p">,</span>
+    <span class="n">library</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys-mcap-recorder"</span><span class="p">,</span>
+    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys.mcap_recorder"</span><span class="p">,</span>
     <span class="n">auto_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">max_queued_bytes</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">MAX_QUEUED_BYTES</span>
 <span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
+
 
 
         <p>Records sensor data to MCAP files for replay and analysis in Foxglove Studio.</p>
@@ -2143,6 +2183,10 @@ first, whichever folder it sits in; kept recordings have a bound of their own so
 cannot eat the rolling window. A merge holds its sources open, so the space the budget
 frees during one only returns when the merge finishes, and the peak then also carries
 the merge's size.</p>
+<p>The budget spares kept recordings named in :attr:<code>protected</code> (e.g. not uploaded yet) unless they
+alone exceed it; then it deletes them too and emits :attr:<code>PROTECTED_RECORDING_DELETED</code>. They count
+toward <code>max_kept_size_mb</code> without ever being deleted by it, so protecting more than that bound
+silently deletes every other kept recording but the newest: keep protection well below it.</p>
 <p>Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
 single background consumer via <code>rosys.run.io_bound</code> so that encoding, ZSTD compression
 and file I/O never block the loop. Encoding runs on the writer too: sources enqueue the
@@ -2256,7 +2300,7 @@ is therefore <code>max_total_size_mb + max_part_size_mb</code>, as the growing p
             <td>
               <div class="doc-md-description">
                 <p>bound for kept recordings within the budget; beyond it the oldest are
-deleted, sparing the newest (the one just filed away) however large it is.</p>
+deleted, sparing the newest (the one just filed away) however large it is and every protected one.</p>
               </div>
             </td>
             <td>
@@ -2390,7 +2434,8 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -2522,6 +2567,30 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
 
 
 
+<h3 id="rosys.analysis.McapRecorder.protected" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">protected</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.analysis.McapRecorder.protected" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">protected</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>names of kept recordings the disk budget spares; replace it whole, the writer thread reads it</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h3 id="rosys.analysis.McapRecorder.recordings" class="doc doc-heading">
             <span class="doc doc-object-name doc-attribute-name">recordings</span>
 
@@ -2589,6 +2658,7 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
     </div>
 
 </div>
+
 
 
 
@@ -2696,7 +2766,7 @@ thread-safely. Outside a running loop (e.g. a synchronous unit test) the call is
     <div class="doc doc-contents ">
 
         <p>Delete the oldest recordings until the kept ones fit <code>max_kept_size</code> and all fit <code>max_total_size</code>.</p>
-<p>The kept bound spares the newest kept recording; the total is then met oldest first across both folders.</p>
+<p>See :func:<code>.budget.select_deletions</code>.</p>
 
 
     </div>
@@ -3635,16 +3705,6 @@ this recorder.</p>
               </div>
             </td>
           </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>RuntimeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>if the app shut down before the merge ran; the sources are kept.</p>
-              </div>
-            </td>
-          </tr>
       </tbody>
     </table>
 
@@ -3803,7 +3863,7 @@ recordings page) are skipped.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="rosys.analysis.recording.mcap_recorder.RecordingInfo" href="recording/#rosys.analysis.recording.RecordingInfo">RecordingInfo</a>]</code>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="RecordingInfo (rosys.analysis.recording.mcap_recorder.RecordingInfo)" href="recording/#rosys.analysis.recording.RecordingInfo">RecordingInfo</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3991,9 +4051,7 @@ previous one is still being finalized.</p>
         <p>Stop recording, drain the queue, and finalize the file off the event loop.</p>
 <p>The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
 the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
-via :func:<code>asyncio.to_thread</code> — deliberately not <code>rosys.run.io_bound</code>, which refuses
-work once the app is stopping (and <code>stop</code> is wired to <code>rosys.on_shutdown</code>) — so it
-never blocks the event loop; <code>start()</code> is refused meanwhile. A final part without
+via <code>rosys.run.io_bound</code>, so it never blocks the event loop; <code>start()</code> is refused meanwhile. A final part without
 messages is discarded, otherwise <code>RECORDING_STOPPED</code> is emitted with its path.</p>
 
 
@@ -4117,6 +4175,10 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
 <td>RECORDING_STOPPED</td>
 <td>a recording file has been finalized (argument: path); emitted per file, including on every rotation</td>
 </tr>
+<tr>
+<td>PROTECTED_RECORDING_DELETED</td>
+<td>the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)</td>
+</tr>
 </tbody>
 </table>
 
@@ -4141,7 +4203,9 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4165,6 +4229,7 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
     <div class="doc doc-contents ">
 
 
+
         <p>Logging Page</p>
 <p>This module creates a page to change the log levels of different loggers.
 A list of logger names like <code>["field_friend", "rosys"]</code> can be passed to group them together.
@@ -4179,7 +4244,9 @@ It is mounted at /logging.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4221,6 +4288,7 @@ It is mounted at /logging.</p>
     <div class="doc doc-contents first">
 
 
+
         <p>Logs Page</p>
 <p>This module creates a page to list and download log files.
 It is mounted at /logs.</p>
@@ -4234,7 +4302,9 @@ It is mounted at /logs.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4269,6 +4339,7 @@ It is mounted at /logs.</p>
               Bases: <code><span title="nicegui.ui.button">button</span></code></p>
 
 
+
         <p>The profile button allows starting and stopping a profiling session.</p>
 <p>Use the <code>profiling.profile</code> decorator for including functions or methods in the analysis.
 The results are shown on the console.</p>
@@ -4282,7 +4353,9 @@ The results are shown on the console.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4319,6 +4392,7 @@ The results are shown on the console.</p>
     <div class="doc doc-contents first">
 
 
+
         <p>Lists the MCAP recordings for download and deletion.</p>
 <p>A long recording rotates into many files, so the parts of one run are listed as a
 single entry that expands into its parts and can be merged into one recording; any
@@ -4350,7 +4424,7 @@ HTTP by basename from the top level or the parts folder (refusing the live file 
                 <code>recorder</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="rosys.analysis.recording.mcap_recorder.McapRecorder" href="#rosys.analysis.McapRecorder">McapRecorder</a></code>
+                  <code><a class="autorefs autorefs-internal" title="McapRecorder (rosys.analysis.recording.mcap_recorder.McapRecorder)" href="#rosys.analysis.McapRecorder">McapRecorder</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4390,7 +4464,9 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4456,10 +4532,10 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

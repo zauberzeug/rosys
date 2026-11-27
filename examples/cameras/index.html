@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -617,6 +617,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1757,12 +1785,12 @@ Make sure the container can access the USB devices by starting it with <code>--p
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimulatedCamera</span>
 
-<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">'test_cam'</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
 
 <span class="n">image</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
 <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">image</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">()))</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p>The <code>ui.timer</code> regularly updates the source property of the <code>ui.image</code>.
 The cameras <code>latest_image_uri</code> property provides the URI to the latest captured image.</p>
@@ -1778,46 +1806,46 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
 
-<span class="k">if</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">():</span>
-    <span class="n">communication</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="p">()</span>
-    <span class="n">robot_brain</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">)</span>
-    <span class="n">can</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">)</span>
-    <span class="n">wheels</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">WheelsHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">,</span> <span class="n">can</span><span class="o">=</span><span class="n">can</span><span class="p">)</span>
-    <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotHardware</span><span class="p">([</span><span class="n">can</span><span class="p">,</span> <span class="n">wheels</span><span class="p">],</span> <span class="n">robot_brain</span><span class="p">)</span>
-    <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">UsbCameraProvider</span><span class="p">()</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">wheels</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">WheelsSimulation</span><span class="p">()</span>
-    <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
-    <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="o">.</span><span class="n">USE_PERSISTENCE</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="p">()</span>
-    <span class="n">camera</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
-    <span class="n">rosys</span><span class="o">.</span><span class="n">on_startup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">add_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">))</span>
-<span class="n">steerer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
-<span class="n">odometer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
-
 
 <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_main_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">camera_card</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># remove &quot;seeking camera&quot; label</span>
+        <span class="n">camera_card</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># remove "seeking camera" label</span>
         <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
             <span class="n">main_cam</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
             <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">main_cam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">()))</span>
 
     <span class="n">camera_provider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
 
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">camera_card</span><span class="p">:</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;seeking main camera&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">'width:30em'</span><span class="p">)</span> <span class="k">as</span> <span class="n">camera_card</span><span class="p">:</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'seeking main camera'</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'m-8 text-center'</span><span class="p">)</span>
 
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">'width:30em'</span><span class="p">):</span>
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
                 <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
                 <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-            <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span> \
-                <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">'steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys'</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'m-8 text-center'</span><span class="p">)</span>
 
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>  <span class="c1"># spawned cpu_bound workers must not open the serial port again</span>
+    <span class="k">if</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">():</span>
+        <span class="n">communication</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="p">()</span>
+        <span class="n">robot_brain</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">)</span>
+        <span class="n">can</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">CanHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">)</span>
+        <span class="n">wheels</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">WheelsHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">,</span> <span class="n">can</span><span class="o">=</span><span class="n">can</span><span class="p">)</span>
+        <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotHardware</span><span class="p">([</span><span class="n">can</span><span class="p">,</span> <span class="n">wheels</span><span class="p">],</span> <span class="n">robot_brain</span><span class="p">)</span>
+        <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">UsbCameraProvider</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wheels</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">WheelsSimulation</span><span class="p">()</span>
+        <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
+        <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="o">.</span><span class="n">USE_PERSISTENCE</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="p">()</span>
+        <span class="n">camera</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">'test_cam'</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+        <span class="n">rosys</span><span class="o">.</span><span class="n">on_startup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">add_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">))</span>
+    <span class="n">steerer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+    <span class="n">odometer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+    <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <p>By adding a <code>Joystick</code> and <code>KeyboardControl</code> the robot is ready to go for remote operation.</p>
 <h2 id="controlling-the-camera">Controlling the Camera<a class="headerlink" href="#controlling-the-camera" title="Permanent link">&para;</a></h2>
@@ -1834,73 +1862,73 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">resolution_to_str</span><span class="p">(</span><span class="n">resolution</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">x</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">resolution</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">x</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">'</span> <span class="k">if</span> <span class="n">resolution</span> <span class="k">else</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">str_to_resolution</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-    <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+    <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">width</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">height</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">camera_parameters</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">get_capabilities</span><span class="p">()</span>
     <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">camera_parameters</span><span class="p">]</span>
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="s1">&#39;Settings&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-full&#39;</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="s1">'Settings'</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'w-full'</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'is_active'</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCamera</span><span class="p">):</span>
-            <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;URL&#39;</span><span class="p">)</span> \
-                <span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;url&#39;</span><span class="p">,</span>
-                                <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">or</span> <span class="s1">&#39;URL not available&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;fps&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'URL'</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'url'</span><span class="p">,</span>
+                                <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">or</span> <span class="s1">'URL not available'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">'fps'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;FPS:&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'FPS:'</span><span class="p">)</span>
                 <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">31</span><span class="p">)),</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;fps&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;fps&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s1">&#39;resolution&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'fps'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">'fps'</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">'resolution'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="n">resolutions</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1920</span><span class="p">,</span> <span class="mi">1080</span><span class="p">),</span> <span class="p">(</span><span class="mi">1280</span><span class="p">,</span> <span class="mi">720</span><span class="p">),</span> <span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">),</span> <span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">480</span><span class="p">),</span> <span class="p">(</span><span class="mi">480</span><span class="p">,</span> <span class="mi">360</span><span class="p">)]</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Resolution:&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'Resolution:'</span><span class="p">)</span>
                 <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="n">resolution_to_str</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">resolutions</span><span class="p">],</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;resolution&#39;</span><span class="p">:</span> <span class="n">str_to_resolution</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">)}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">resolution_to_str</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;resolution&#39;</span><span class="p">)))</span>
-        <span class="k">if</span> <span class="s1">&#39;mirrored&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'resolution'</span><span class="p">:</span> <span class="n">str_to_resolution</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">)}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">resolution_to_str</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'resolution'</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="s1">'mirrored'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">&#39;Mirrored&#39;</span><span class="p">,</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;mirrored&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mirrored&#39;</span><span class="p">)))</span>
-        <span class="k">if</span> <span class="s1">&#39;substream&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">'Mirrored'</span><span class="p">,</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'mirrored'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'mirrored'</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="s1">'substream'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">&#39;High Quality&#39;</span><span class="p">,</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;substream&#39;</span><span class="p">:</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="k">else</span> <span class="mi">1</span><span class="p">}))</span>
-        <span class="k">if</span> <span class="s1">&#39;bitrate&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">'High Quality'</span><span class="p">,</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'substream'</span><span class="p">:</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="k">else</span> <span class="mi">1</span><span class="p">}))</span>
+        <span class="k">if</span> <span class="s1">'bitrate'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Bitrate (kbit):&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'Bitrate (kbit):'</span><span class="p">)</span>
                 <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">2048</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">8192</span><span class="p">],</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;bitrate&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bitrate&#39;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="s1">&#39;exposure&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'bitrate'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'bitrate'</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s1">'exposure'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Exposure:&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'Exposure:'</span><span class="p">)</span>
                 <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;exposure&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s1">&#39;auto_exposure&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'exposure'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">'exposure'</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">'auto_exposure'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">&#39;Auto Exposure&#39;</span><span class="p">,</span>
-                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;auto_exposure&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
-                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
-                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;auto_exposure&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s1">&#39;color&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">'Auto Exposure'</span><span class="p">,</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'auto_exposure'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'parameters'</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">'auto_exposure'</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">'color'</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Color:&#39;</span><span class="p">)</span>
-                <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="n">icon</span><span class="o">=</span><span class="s1">&#39;colorize&#39;</span><span class="p">):</span>
-                    <span class="n">ui</span><span class="o">.</span><span class="n">color_picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">color</span><span class="p">}))</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'Color:'</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="n">icon</span><span class="o">=</span><span class="s1">'colorize'</span><span class="p">):</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">color_picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">'color'</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">color</span><span class="p">}))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1910,15 +1938,15 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
     <span class="k">def</span><span class="w"> </span><span class="nf">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">uid</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">id</span>
         <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;adding card for </span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'adding card for </span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
             <span class="k">with</span> <span class="n">camera_grid</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
                 <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'m-2'</span><span class="p">)</span>
                 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;connect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span> \
-                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">active</span><span class="p">:</span> <span class="ow">not</span> <span class="n">active</span><span class="p">)</span>
-                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;disconnect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">)</span> \
-                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">)</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'connect'</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span> \
+                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'is_active'</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">active</span><span class="p">:</span> <span class="ow">not</span> <span class="n">active</span><span class="p">)</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'disconnect'</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">)</span> \
+                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">'is_active'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">):</span>
                     <span class="n">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
 
@@ -1943,7 +1971,7 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
     <span class="n">simulated_camera_provider</span><span class="p">,</span>
 <span class="p">]</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="automatic-reconnection">Automatic Reconnection<a class="headerlink" href="#automatic-reconnection" title="Permanent link">&para;</a></h2>
 <p>Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
@@ -1971,7 +1999,7 @@ A deliberately disconnected camera stays disconnected, even with <code>auto_scan
             <span class="k">with</span> <span class="n">camera_grid</span><span class="p">:</span>
                 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
                     <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
-                    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'m-2'</span><span class="p">)</span>
         <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">())</span>
 
 
@@ -1979,7 +2007,7 @@ A deliberately disconnected camera stays disconnected, even with <code>auto_scan
 <span class="n">camera_grid</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
 <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">refresh</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -2030,10 +2058,10 @@ A deliberately disconnected camera stays disconnected, even with <code>auto_scan
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

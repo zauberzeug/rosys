@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -504,6 +504,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1585,13 +1613,13 @@
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
 <span class="hll"><span class="n">recorder</span> <span class="o">=</span> <span class="n">McapRecorder</span><span class="p">(</span><span class="n">auto_start</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_event_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">&#39;/wheels&#39;</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">VELOCITY_MEASURED</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_pose_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">&#39;/odometry/pose&#39;</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">POSE_UPDATED</span><span class="p">,</span> <span class="n">child</span><span class="o">=</span><span class="s1">&#39;odometry&#39;</span><span class="p">)</span>
+</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_event_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">'/wheels'</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">VELOCITY_MEASURED</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_pose_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">'/odometry/pose'</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">POSE_UPDATED</span><span class="p">,</span> <span class="n">child</span><span class="o">=</span><span class="s1">'odometry'</span><span class="p">)</span>
 </span>
-<span class="hll"><span class="n">RecordingsPage</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s1">&#39;steering&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">))</span>
+<span class="hll"><span class="n">RecordingsPage</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s1">'steering'</span><span class="p">,</span> <span class="s1">'/'</span><span class="p">))</span>
 </span>
 
-<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
@@ -1599,7 +1627,7 @@
     <span class="n">recorder</span><span class="o">.</span><span class="n">developer_ui</span><span class="p">()</span>
 
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;MCAP Recording&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'MCAP Recording'</span><span class="p">)</span>
 </code></pre></div>
 <dl>
 <dt>Recorder</dt>
@@ -1613,6 +1641,11 @@ A part is rotated by size (<code>max_part_size_mb</code>) and, with <code>max_pa
 <dd>Before a part is opened, the oldest recordings are deleted to stay within <code>max_total_size_mb</code>, whichever folder they sit in.
 Every <code>.mcap</code> at the top level of the output directory is a kept recording (renamed, merged or placed there by hand); the folder decides, not the name.
 Kept recordings have a bound of their own, <code>max_kept_size_mb</code>, which spares the newest kept file.</dd>
+<dt>Protecting kept recordings</dt>
+<dd><code>recorder.protected = frozenset({'mission_merged.mcap'})</code> makes the disk budget pass over these kept recordings, e.g. until they are uploaded elsewhere; replace the set as a whole, never mutate it.
+Protected recordings count toward <code>max_kept_size_mb</code>, but that bound never deletes them: protecting more than it holds deletes every other kept recording except the newest and leaves less room for the parts, without a warning or an event, so keep what you protect well below <code>max_kept_size_mb</code>.
+Only when the protected recordings alone exceed <code>max_total_size_mb</code> are they deleted too, oldest first, and <code>PROTECTED_RECORDING_DELETED</code> reports each.
+The budget only runs before a part is opened, so a kept recording is safe if it is protected before the next part starts.</dd>
 <dt>Topics</dt>
 <dd><code>add_event_topic</code> and <code>add_pose_topic</code> bind a topic to a RoSys event; the matching Foxglove converter is picked from the payload type automatically.
 The subscription is only active while a recording is open.</dd>
@@ -1678,10 +1711,10 @@ The optional <code>header</code> callback renders shared navigation at the top o
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

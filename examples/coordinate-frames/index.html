@@ -14,14 +14,14 @@
         <link rel="prev" href="../click-and-drive/">
       
       
-        <link rel="next" href="../hardware/">
+        <link rel="next" href="../detector_masks/">
       
       
         
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -570,6 +570,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1647,15 +1675,15 @@ Note that the relationship between the pink box and the camera is unaffected by 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pose3d</span><span class="p">,</span> <span class="n">Rotation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">CameraSceneObject</span><span class="p">,</span> <span class="n">SimulatedCalibratableCamera</span>
 
-<span class="n">blue</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
-<span class="n">pink</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;pink&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">blue</span><span class="p">)</span>
-<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCalibratableCamera</span><span class="o">.</span><span class="n">create_calibrated</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;Camera&#39;</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+<span class="n">blue</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">'blue'</span><span class="p">)</span>
+<span class="n">pink</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">'pink'</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">blue</span><span class="p">)</span>
+<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCalibratableCamera</span><span class="o">.</span><span class="n">create_calibrated</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">'Camera'</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
                                                        <span class="n">roll</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
                                                        <span class="n">frame</span><span class="o">=</span><span class="n">pink</span><span class="p">)</span>
 
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="k">as</span> <span class="n">scene</span><span class="p">:</span>
-    <span class="n">blue_box</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;SteelBlue&#39;</span><span class="p">)</span>
-    <span class="n">pink_box</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;HotPink&#39;</span><span class="p">)</span>
+    <span class="n">blue_box</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">'SteelBlue'</span><span class="p">)</span>
+    <span class="n">pink_box</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">'HotPink'</span><span class="p">)</span>
     <span class="n">camera_object</span> <span class="o">=</span> <span class="n">CameraSceneObject</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
 
 
@@ -1676,11 +1704,11 @@ Note that the relationship between the pink box and the camera is unaffected by 
 
 <span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Toggle frame&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">pink</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span>
-    <span class="kc">None</span> <span class="k">if</span> <span class="n">pink</span><span class="o">.</span><span class="n">frame_id</span> <span class="o">==</span> <span class="s1">&#39;blue&#39;</span> <span class="k">else</span> <span class="n">blue</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'Toggle frame'</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">pink</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span>
+    <span class="kc">None</span> <span class="k">if</span> <span class="n">pink</span><span class="o">.</span><span class="n">frame_id</span> <span class="o">==</span> <span class="s1">'blue'</span> <span class="k">else</span> <span class="n">blue</span>
 <span class="p">))</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p><img alt="Coordinate Frames" src="screenshot.webp" style="width:80%" /></p>
 <h2 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">&para;</a></h2>
@@ -1738,10 +1766,10 @@ See <a href="https://github.com/zauberzeug/rosys/tree/main/examples/camera_arm">
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -514,6 +514,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1583,21 +1611,21 @@ Additionally, the UI shows a 3D representation of the area that can be used to c
 <span class="n">area_manipulation</span> <span class="o">=</span> <span class="n">AreaManipulation</span><span class="p">(</span><span class="n">path_planner</span><span class="p">)</span>
 
 <span class="c1"># ui</span>
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;mx-auto&#39;</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;items-center&#39;</span><span class="p">):</span>
-        <span class="n">select</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">({</span><span class="kc">None</span><span class="p">:</span> <span class="s1">&#39;Asphalt&#39;</span><span class="p">,</span> <span class="s1">&#39;sand&#39;</span><span class="p">:</span> <span class="s1">&#39;Sand&#39;</span><span class="p">})</span> \
-            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">&#39;area_type&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-20&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'mx-auto'</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'items-center'</span><span class="p">):</span>
+        <span class="n">select</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">({</span><span class="kc">None</span><span class="p">:</span> <span class="s1">'Asphalt'</span><span class="p">,</span> <span class="s1">'sand'</span><span class="p">:</span> <span class="s1">'Sand'</span><span class="p">})</span> \
+            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">'area_type'</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'w-20'</span><span class="p">)</span>
         <span class="n">ui</span><span class="o">.</span><span class="n">color_input</span><span class="p">(</span><span class="n">preview</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">&#39;area_color&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-40&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">'area_color'</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">'w-40'</span><span class="p">)</span>
         <span class="n">area_manipulation</span><span class="o">.</span><span class="n">create_ui</span><span class="p">()</span>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">480</span><span class="p">,</span>
                   <span class="n">on_click</span><span class="o">=</span><span class="n">area_manipulation</span><span class="o">.</span><span class="n">handle_click</span><span class="p">,</span>
                   <span class="n">on_drag_end</span><span class="o">=</span><span class="n">area_manipulation</span><span class="o">.</span><span class="n">handle_drag_end</span><span class="p">,</span>
-                  <span class="n">drag_constraints</span><span class="o">=</span><span class="s1">&#39;z = 0&#39;</span><span class="p">):</span>
+                  <span class="n">drag_constraints</span><span class="o">=</span><span class="s1">'z = 0'</span><span class="p">):</span>
         <span class="n">area_object</span><span class="p">(</span><span class="n">path_planner</span><span class="p">,</span> <span class="n">area_manipulation</span><span class="p">)</span>
 
 <span class="c1"># start</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;areas&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'areas'</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -1648,10 +1676,10 @@ Additionally, the UI shows a 3D representation of the area that can be used to c
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

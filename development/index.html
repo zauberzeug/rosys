@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -502,6 +502,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1875,32 +1903,32 @@ In the following examples we use Python's logging <code>dictConfig</code> for co
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dictConfig</span><span class="p">({</span>
-    <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s1">&#39;disable_existing_loggers&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># to make sure this config is used</span>
-    <span class="s1">&#39;formatters&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;datefmt&#39;</span><span class="p">:</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">,</span>
+    <span class="s1">'version'</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">'disable_existing_loggers'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># to make sure this config is used</span>
+    <span class="s1">'formatters'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'default'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'format'</span><span class="p">:</span> <span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
+            <span class="s1">'datefmt'</span><span class="p">:</span> <span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S'</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">},</span>
-    <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;console&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;stream&#39;</span><span class="p">:</span> <span class="s1">&#39;ext://sys.stdout&#39;</span>
+    <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'console'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'class'</span><span class="p">:</span> <span class="s1">'logging.StreamHandler'</span><span class="p">,</span>
+            <span class="s1">'formatter'</span><span class="p">:</span> <span class="s1">'default'</span><span class="p">,</span>
+            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+            <span class="s1">'stream'</span><span class="p">:</span> <span class="s1">'ext://sys.stdout'</span>
         <span class="p">},</span>
     <span class="p">},</span>
-    <span class="s1">&#39;loggers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
-            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;WARN&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">'loggers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">''</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
+            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">],</span>
+            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'WARN'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-<span class="hll">        <span class="s1">&#39;rosys&#39;</span><span class="p">:</span> <span class="p">{</span>
-</span><span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-</span><span class="hll">            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="hll">        <span class="s1">'rosys'</span><span class="p">:</span> <span class="p">{</span>
+</span><span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">],</span>
+</span><span class="hll">            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'INFO'</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
 </span><span class="hll">        <span class="p">},</span>
 </span>    <span class="p">},</span>
 <span class="p">})</span>
@@ -1912,7 +1940,7 @@ In the following examples we use Python's logging <code>dictConfig</code> for co
 
 <span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p>As you move the joystick, <code>rosys.steerer</code> messages will appear on the console:</p>
 <div class="highlight"><pre><span></span><code>2022-01-11 06:53:21 - INFO - start steering
@@ -1923,55 +1951,55 @@ In the following examples we use Python's logging <code>dictConfig</code> for co
 <h3 id="adding-loggers">Adding Loggers<a class="headerlink" href="#adding-loggers" title="Permanent link">&para;</a></h3>
 <p>You can easily add more loggers.
 For example, to see debug messages of the odometer you can add</p>
-<div class="highlight"><pre><span></span><code><span class="hll"><span class="s1">&#39;rosys.odometer&#39;</span><span class="p">:</span> <span class="p">{</span>
-</span>    <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-<span class="hll">    <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-</span>    <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="s1">'rosys.odometer'</span><span class="p">:</span> <span class="p">{</span>
+</span>    <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">],</span>
+<span class="hll">    <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+</span>    <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">},</span>
 </code></pre></div>
 <p>Most of the time we turn off log propagation to ensure the configuration we defined ourselves is really used.</p>
 <h3 id="logging-to-file">Logging to File<a class="headerlink" href="#logging-to-file" title="Permanent link">&para;</a></h3>
 <p>Sometimes it is helpful to write intensive logging into a file and only show some messages on the console.
 For this you can add a file <code>handler</code>:</p>
-<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;console&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;stream&#39;</span><span class="p">:</span> <span class="s1">&#39;ext://sys.stdout&#39;</span>
+<div class="highlight"><pre><span></span><code>    <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'console'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'class'</span><span class="p">:</span> <span class="s1">'logging.StreamHandler'</span><span class="p">,</span>
+            <span class="s1">'formatter'</span><span class="p">:</span> <span class="s1">'default'</span><span class="p">,</span>
+            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+            <span class="s1">'stream'</span><span class="p">:</span> <span class="s1">'ext://sys.stdout'</span>
         <span class="p">},</span>
-<span class="hll">        <span class="s1">&#39;file&#39;</span><span class="p">:</span> <span class="p">{</span>
-</span><span class="hll">            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.handlers.RotatingFileHandler&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="n">PATH</span> <span class="o">/</span> <span class="s1">&#39;example.log&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;maxBytes&#39;</span><span class="p">:</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;backupCount&#39;</span><span class="p">:</span> <span class="mi">3</span>
+<span class="hll">        <span class="s1">'file'</span><span class="p">:</span> <span class="p">{</span>
+</span><span class="hll">            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'class'</span><span class="p">:</span> <span class="s1">'logging.handlers.RotatingFileHandler'</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'formatter'</span><span class="p">:</span> <span class="s1">'default'</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'filename'</span><span class="p">:</span> <span class="n">PATH</span> <span class="o">/</span> <span class="s1">'example.log'</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'maxBytes'</span><span class="p">:</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">'backupCount'</span><span class="p">:</span> <span class="mi">3</span>
 </span><span class="hll">        <span class="p">}</span>
 </span>    <span class="p">},</span>
 </code></pre></div>
 <p>Then you can decide for each logger which handlers should be used:</p>
 <div class="highlight"><pre><span></span><code>    <span class="p">},</span>
-    <span class="s1">&#39;loggers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;WARN&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">'loggers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">''</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">,</span> <span class="s1">'file'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'WARN'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s1">&#39;rosys&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">'rosys'</span><span class="p">:</span> <span class="p">{</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">,</span> <span class="s1">'file'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'INFO'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s1">&#39;rosys.event&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">'rosys.event'</span><span class="p">:</span> <span class="p">{</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s1">&#39;rosys.core&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">'rosys.core'</span><span class="p">:</span> <span class="p">{</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
 </code></pre></div>
 <div class="admonition note">
@@ -1984,10 +2012,10 @@ Therefore logging should always be stored outside of your project's source direc
 <p>It is quite useful to see from which file and line number a log entry was triggered.
 To keep the log lines from getting too long, you can create a log filter which computes the relative path:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PackagePathFilter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Filter</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides relative path for log formatter.</span>
+<span class="w">    </span><span class="sd">"""Provides relative path for log formatter.</span>
 
 <span class="sd">    Original code borrowed from https://stackoverflow.com/a/52582536/3419103</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">pathname</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">pathname</span>
@@ -2002,30 +2030,30 @@ To keep the log lines from getting too long, you can create a log filter which c
 </code></pre></div>
 <p>You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:</p>
-<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">        <span class="s1">&#39;package_path_filter&#39;</span><span class="p">:</span> <span class="p">{</span>
-</span><span class="hll">            <span class="s1">&#39;()&#39;</span><span class="p">:</span> <span class="n">PackagePathFilter</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code>    <span class="s1">'filters'</span><span class="p">:</span> <span class="p">{</span>
+<span class="hll">        <span class="s1">'package_path_filter'</span><span class="p">:</span> <span class="p">{</span>
+</span><span class="hll">            <span class="s1">'()'</span><span class="p">:</span> <span class="n">PackagePathFilter</span><span class="p">,</span>
 </span><span class="hll">        <span class="p">},</span>
 </span>    <span class="p">},</span>
-    <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;console&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
-<span class="hll">            <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;package_path_filter&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;stream&#39;</span><span class="p">:</span> <span class="s1">&#39;ext://sys.stdout&#39;</span>
+    <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'console'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'class'</span><span class="p">:</span> <span class="s1">'logging.StreamHandler'</span><span class="p">,</span>
+<span class="hll">            <span class="s1">'filters'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'package_path_filter'</span><span class="p">],</span>
+</span>            <span class="s1">'formatter'</span><span class="p">:</span> <span class="s1">'default'</span><span class="p">,</span>
+            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'DEBUG'</span><span class="p">,</span>
+            <span class="s1">'stream'</span><span class="p">:</span> <span class="s1">'ext://sys.stdout'</span>
         <span class="p">},</span>
     <span class="p">},</span>
-    <span class="s1">&#39;loggers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;WARN&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">'loggers'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">''</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'WARN'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s1">&#39;rosys&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">'rosys'</span><span class="p">:</span> <span class="p">{</span>
+<span class="hll">            <span class="s1">'handlers'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'console'</span><span class="p">],</span>
+</span>            <span class="s1">'level'</span><span class="p">:</span> <span class="s1">'INFO'</span><span class="p">,</span>
+            <span class="s1">'propagate'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">},</span>
 </code></pre></div>
@@ -2101,7 +2129,7 @@ The UI element <code>track.ui()</code> will show the stack of functions that are
         <span class="k">await</span> <span class="n">do_A</span><span class="p">()</span>
         <span class="k">await</span> <span class="n">do_B</span><span class="p">()</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Do something&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">do_something</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'Do something'</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">do_something</span><span class="p">)</span>
 
 <span class="hll"><span class="n">track</span><span class="o">.</span><span class="n">ui</span><span class="p">()</span>
 </span>
@@ -2118,7 +2146,8 @@ To create a new release perform the following steps:</p>
 <li>Edit the text the script produces with more details and more mentions of people that participated.</li>
 <li>In your local repo add a new tag with <code>v0.{x.y}</code> as the name to the current main head.</li>
 <li>Push to GitHub which starts GitHub Action that performs the following steps:</li>
-<li>If the pytests are successful, a build and deployment to <a href="https://pypi.org/project/rosys/">pypi</a> is issued.</li>
+<li>If the pytests are successful, the package is built and the run waits for a deployment review of the environment <code>pypi</code>.</li>
+<li>After a maintainer approves the deployment in the Actions run, the package is published to <a href="https://pypi.org/project/rosys/">pypi</a> and a GitHub release entry is created.</li>
 <li>A multi-arch Docker image is built and pushed to <a href="https://hub.docker.com/r/zauberzeug/rosys">Docker Hub</a>.</li>
 <li>Close the milestone on GitHub.</li>
 <li>Create a new milestone on GitHub with the next version (<code>0.{x.y+1}</code>).</li>
@@ -2174,10 +2203,10 @@ To create a new release perform the following steps:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

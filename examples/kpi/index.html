@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -504,6 +504,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1584,12 +1612,12 @@
         <span class="n">Day</span><span class="p">(</span>
             <span class="n">date</span><span class="o">=</span><span class="n">date_to_str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">i</span><span class="p">)),</span>
             <span class="n">incidents</span><span class="o">=</span><span class="p">{</span>
-                <span class="s1">&#39;wheels_slipped&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
-                <span class="s1">&#39;wheels_blocking&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
-                <span class="s1">&#39;tests_run&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
-                <span class="s1">&#39;finished_task&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
-                <span class="s1">&#39;connection_established&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
-                <span class="s1">&#39;bumps&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                <span class="s1">'wheels_slipped'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+                <span class="s1">'wheels_blocking'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+                <span class="s1">'tests_run'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+                <span class="s1">'finished_task'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                <span class="s1">'connection_established'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+                <span class="s1">'bumps'</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
             <span class="p">},</span>
         <span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">7</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
     <span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1599,30 +1627,30 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;KPI Example Page&#39;</span>
+        <span class="k">return</span> <span class="s1">'KPI Example Page'</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">charts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">KpiChart</span><span class="p">]:</span>
-        <span class="n">positives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Positive Events&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;finished_task&#39;</span><span class="p">:</span> <span class="s1">&#39;Finished Tasks&#39;</span><span class="p">,</span>
-        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;Greens&#39;</span><span class="p">)</span>
-        <span class="n">neutral_events</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Neutral Events&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;connection_established&#39;</span><span class="p">:</span> <span class="s1">&#39;Connection was established&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;tests_run&#39;</span><span class="p">:</span> <span class="s1">&#39;Tests&#39;</span><span class="p">,</span>
+        <span class="n">positives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Positive Events'</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'finished_task'</span><span class="p">:</span> <span class="s1">'Finished Tasks'</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">'Greens'</span><span class="p">)</span>
+        <span class="n">neutral_events</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Neutral Events'</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'connection_established'</span><span class="p">:</span> <span class="s1">'Connection was established'</span><span class="p">,</span>
+            <span class="s1">'tests_run'</span><span class="p">:</span> <span class="s1">'Tests'</span><span class="p">,</span>
         <span class="p">})</span>
-        <span class="n">negatives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Exceptions&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;wheels_slipped&#39;</span><span class="p">:</span> <span class="s1">&#39;Wheels Slipping&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;wheels_blocking&#39;</span><span class="p">:</span> <span class="s1">&#39;Wheels Blocking&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;bumps&#39;</span><span class="p">:</span> <span class="s1">&#39;Robot bumped into something&#39;</span><span class="p">,</span>
-        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;Reds&#39;</span><span class="p">)</span>
+        <span class="n">negatives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Exceptions'</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'wheels_slipped'</span><span class="p">:</span> <span class="s1">'Wheels Slipping'</span><span class="p">,</span>
+            <span class="s1">'wheels_blocking'</span><span class="p">:</span> <span class="s1">'Wheels Blocking'</span><span class="p">,</span>
+            <span class="s1">'bumps'</span><span class="p">:</span> <span class="s1">'Robot bumped into something'</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">'Reds'</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">positives</span><span class="p">,</span> <span class="n">neutral_events</span><span class="p">,</span> <span class="n">negatives</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">timespans</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="mi">7</span><span class="p">:</span> <span class="s1">&#39;7 days&#39;</span><span class="p">,</span>
-            <span class="mi">14</span><span class="p">:</span> <span class="s1">&#39;2 weeks&#39;</span><span class="p">,</span>
-            <span class="mi">21</span><span class="p">:</span> <span class="s1">&#39;3 weeks&#39;</span><span class="p">,</span>
+            <span class="mi">7</span><span class="p">:</span> <span class="s1">'7 days'</span><span class="p">,</span>
+            <span class="mi">14</span><span class="p">:</span> <span class="s1">'2 weeks'</span><span class="p">,</span>
+            <span class="mi">21</span><span class="p">:</span> <span class="s1">'3 weeks'</span><span class="p">,</span>
         <span class="p">}</span>
 
 
@@ -1630,7 +1658,7 @@
 <span class="n">generate_example_kpis</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
 <span class="n">kpi_page</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;KPI Example&#39;</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="s1">&#39;/kpis&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'KPI Example'</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="s1">'/kpis'</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -1681,10 +1709,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

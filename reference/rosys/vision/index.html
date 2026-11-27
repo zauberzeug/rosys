@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -502,6 +502,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1828,6 +1856,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageMasks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageMasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.FILL_VALUE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FILL_VALUE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.polygons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        polygons
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.apply_as_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apply_as_bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageMasks.set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.vision.ImageRecorder" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2101,6 +2212,7 @@
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Configuration options for image auto-upload behavior to the Learning Loop</p>
 
 
@@ -2112,7 +2224,8 @@
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -2134,7 +2247,7 @@
   </span>
 
 <a href="#rosys.vision.Autoupload.ALL" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">ALL</span> <span class="o">=</span> <span class="s1">&#39;all&#39;</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">ALL</span> <span class="o">=</span> <span class="s1">'all'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2159,7 +2272,7 @@
   </span>
 
 <a href="#rosys.vision.Autoupload.DISABLED" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">DISABLED</span> <span class="o">=</span> <span class="s1">&#39;disabled&#39;</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">DISABLED</span> <span class="o">=</span> <span class="s1">'disabled'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2184,7 +2297,7 @@
   </span>
 
 <a href="#rosys.vision.Autoupload.FILTERED" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">FILTERED</span> <span class="o">=</span> <span class="s1">&#39;filtered&#39;</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">FILTERED</span> <span class="o">=</span> <span class="s1">'filtered'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2194,6 +2307,7 @@
     </div>
 
 </div>
+
 
 
 
@@ -2239,6 +2353,7 @@
     <div class="doc doc-contents first">
 
 
+
         <p>The camera projector computes a grid of projected image points on the ground plane.</p>
 <p>It is mainly used for visualization purposes.</p>
 
@@ -2251,7 +2366,9 @@
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2326,6 +2443,7 @@
               Bases: <code><span title="typing.Generic">Generic</span>[<span title="rosys.vision.camera_provider.T">T</span>]</code>, <code><span title="rosys.persistence.Persistable">Persistable</span></code></p>
 
 
+
         <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
 <p>The camera dictionary should not be modified directly but by using the camera provider's methods.
 This way respective events are emitted and consistency can be taken care of.</p>
@@ -2340,7 +2458,9 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2423,6 +2543,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
               Bases: <code><span title="rosys.vision.camera.camera.Camera">Camera</span></code></p>
 
 
+
         <p>A generalized interface for adjusting camera parameters like exposure, brightness or fps.</p>
 
 
@@ -2434,7 +2555,9 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2461,7 +2584,11 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 <a href="#rosys.vision.Detector" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Detector</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Detector</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">masks</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Polygon</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -2469,9 +2596,14 @@ This way respective events are emitted and consistency can be taken care of.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>A detector allows detecting objects in images.</p>
 <p>It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
 like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
+<p>With <code>masks</code> image regions can be grayed out per camera id, given as polygons in normalized image coordinates
+(x and y from 0 to 1, origin in the top-left corner, y pointing down).
+Pixels inside these polygons are replaced by gray before they reach the detector;
+this applies to detection and upload alike, while the images themselves stay untouched.</p>
 
 
 
@@ -2482,7 +2614,9 @@ like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Lear
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2511,14 +2645,94 @@ like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Lear
     <span class="n">autoupload</span><span class="p">:</span> <span class="n">Autoupload</span> <span class="o">=</span> <span class="n">Autoupload</span><span class="o">.</span><span class="n">FILTERED</span><span class="p">,</span>
     <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">image_metadata</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BatchImageMetadata</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Detections</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Runs detections on all images and fills each <code>image.detections</code> property.</p>
-<p>Result order matches <code>images</code>.</p>
+<p>Result order matches <code>images</code>, and so must <code>image_metadata</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>tags</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>tags of every image; an image's own tags are added</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>source of every image, unless the image sets its own</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>creation_date</code>
+            </td>
+            <td>
+                  <code><span title="datetime.datetime">datetime</span> | <span title="str">str</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>creation date of every image, unless the image sets its own</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>image_metadata</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="rosys.vision.detector.BatchImageMetadata">BatchImageMetadata</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>one entry per image, see <code>BatchImageMetadata</code></p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -2765,7 +2979,7 @@ In this case this method returns <code>None</code>.</p>
 
 <a href="#rosys.vision.Detector.set_model_version" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_model_version</span><span class="p">(</span>
-    <span class="n">version</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;follow_loop&quot;</span><span class="p">,</span> <span class="s2">&quot;pause&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"follow_loop"</span><span class="p">,</span> <span class="s2">"pause"</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
@@ -2899,19 +3113,21 @@ If it is omitted, the Learning Loop applies its own default.</p>
 <a href="#rosys.vision.DetectorHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">DetectorHardware</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"localhost"</span><span class="p">,</span>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_disconnect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">sio_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
     <span class="n">image_transmission_format</span><span class="p">:</span> <span class="n">ImageTransmissionFormat</span> <span class="o">=</span> <span class="n">ImageTransmissionFormat</span><span class="o">.</span><span class="n">RAW</span><span class="p">,</span>
-    <span class="n">jpeg_quality</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_JPEG_QUALITY</span>
+    <span class="n">jpeg_quality</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_JPEG_QUALITY</span><span class="p">,</span>
+    <span class="n">masks</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Polygon</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="Detector (rosys.vision.detector.Detector)" href="#rosys.vision.Detector">Detector</a></code></p>
+
 
 
         <p>This detector communicates with a zauberzeug detector node via SocketIO.</p>
@@ -2919,7 +3135,8 @@ If it is omitted, the Learning Loop applies its own default.</p>
 that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 <p>Note: Images must be smaller than <code>MAX_IMAGE_SIZE</code> bytes (default: 64 MB).</p>
 <p>By default images are sent as raw pixel arrays.
-With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they are encoded as JPEG with <code>jpeg_quality</code> first.</p>
+With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they are encoded as JPEG with <code>jpeg_quality</code> first.
+The <code>masks</code> are applied before either format is produced.</p>
 
 
 
@@ -2930,7 +3147,9 @@ With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they ar
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3009,13 +3228,15 @@ With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they ar
     <span class="o">*</span><span class="p">,</span>
     <span class="n">noise</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="n">detection_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">masks</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Polygon</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="Detector (rosys.vision.detector.Detector)" href="#rosys.vision.Detector">Detector</a></code></p>
+
 
 
         <p>This detector simulates object detection.</p>
@@ -3023,7 +3244,8 @@ With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they ar
 Individual camera IDs can be added to a set of <code>blocked_cameras</code> to simulate occlusions during pytests.
 A list of <code>simulated_objects</code> can be filled to define what can be detected.
 An optional <code>noise</code> parameter controls the spatial accuracy in pixels.
-An optional <code>detection_delay</code> parameter simulates the time it takes to process an image.</p>
+An optional <code>detection_delay</code> parameter simulates the time it takes to process an image.
+Objects projected into a camera's <code>masks</code> are not detected.</p>
 
 
 
@@ -3034,7 +3256,8 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -3043,6 +3266,267 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.ImageMasks" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ImageMasks</span>
+
+
+<a href="#rosys.vision.ImageMasks" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ImageMasks</span><span class="p">(</span>
+    <span class="n">polygons</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Polygon</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Per-camera masks that gray out regions of an image.</p>
+<p>Each camera id maps to polygons in normalized image coordinates
+(x and y from 0 to 1, origin in the top-left corner, y pointing down),
+so the same polygons fit every resolution a camera may deliver.
+Pixels inside a camera's polygons are replaced by <code>FILL_VALUE</code>, all others are kept;
+along the outlines, which are grayed out as well, the result is accurate to about a pixel.
+Polygons may overlap, and a polygon reaching 0 and 1 covers the full width or height of the image.
+Points may lie outside that range, so a polygon can be drawn past the image edge to be sure it reaches the border;
+only the part inside the image has an effect.
+A camera without polygons passes its images through unchanged.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.ImageMasks.FILL_VALUE" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">FILL_VALUE</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.ImageMasks.FILL_VALUE" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">FILL_VALUE</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">114</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Gray value for the pixels inside the polygons.</p>
+<p>It matches the letterbox padding common detectors are trained with.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.ImageMasks.polygons" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">polygons</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#rosys.vision.ImageMasks.polygons" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">polygons</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Polygon</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>A read-only view of the polygons per camera id.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ImageMasks.apply" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">apply</span>
+
+
+<a href="#rosys.vision.ImageMasks.apply" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">apply</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ImageArray</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the pixels of an image with everything inside the camera's polygons replaced by <code>FILL_VALUE</code>.</p>
+<p>The image itself is left untouched.
+If the camera has no polygons, the image's own array is returned without a copy.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ImageMasks.apply_as_bytes" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">apply_as_bytes</span>
+
+
+<a href="#rosys.vision.ImageMasks.apply_as_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">apply_as_bytes</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the masked pixels in C order, like <code>apply(image).tobytes()</code> but without copying them twice.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ImageMasks.remove" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">remove</span>
+
+
+<a href="#rosys.vision.ImageMasks.remove" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">remove</span><span class="p">(</span><span class="n">camera_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove the polygons of a camera so its images pass through unchanged.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ImageMasks.set" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set</span>
+
+
+<a href="#rosys.vision.ImageMasks.set" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">(</span><span class="n">camera_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">polygons</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Polygon</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Replace the polygons of a camera.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>camera_id</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the camera the polygons apply to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>polygons</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Iterable">Iterable</span>[<span title="rosys.geometry.Polygon">Polygon</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>polygons with at least three points each;
+without any polygons the camera passes its images through unchanged</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>ValueError</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>if a polygon has fewer than three points or a coordinate is not finite</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 
 
@@ -3069,6 +3553,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
     <div class="doc doc-contents first">
 
 
+
         <p>This module saves images from a CameraProvider to disk.</p>
 
         <p>This module saves images from a CameraProvider to disk.</p>
@@ -3090,7 +3575,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
                 <code>camera_provider</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code>
+                  <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3129,7 +3614,9 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3183,6 +3670,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Target state for an image when uploaded to the Learning Loop</p>
 
 
@@ -3194,7 +3682,9 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3243,6 +3733,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>How images are sent to a detector node</p>
 
 
@@ -3254,7 +3745,8 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -3276,7 +3768,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
   </span>
 
 <a href="#rosys.vision.ImageTransmissionFormat.JPEG" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">JPEG</span> <span class="o">=</span> <span class="s1">&#39;jpeg&#39;</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">JPEG</span> <span class="o">=</span> <span class="s1">'jpeg'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3301,7 +3793,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
   </span>
 
 <a href="#rosys.vision.ImageTransmissionFormat.RAW" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">RAW</span> <span class="o">=</span> <span class="s1">&#39;raw&#39;</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">RAW</span> <span class="o">=</span> <span class="s1">'raw'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3311,6 +3803,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
     </div>
 
 </div>
+
 
 
 
@@ -3351,7 +3844,8 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
+
 
 
         <p>A multi-camera provider combines multiple camera providers into one.</p>
@@ -3366,7 +3860,9 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3400,7 +3896,8 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.record_replay.replay_camera.ReplayCamera">ReplayCamera</span>]</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.record_replay.replay_camera.ReplayCamera">ReplayCamera</span>]</code></p>
+
 
 
         <p>This module collects and simulates cameras by looping over images in a drive.</p>
@@ -3463,7 +3960,9 @@ Therefore, setting the time to 0.0 will cause all cameras to emit their first im
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3484,7 +3983,7 @@ Therefore, setting the time to 0.0 will cause all cameras to emit their first im
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">create_ui</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">skip_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
-    <span class="n">time_label_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M:%S&quot;</span>
+    <span class="n">time_label_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%d</span><span class="s2">.%m.%Y %H:%M:%S"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
@@ -3689,7 +4188,7 @@ You may use negative values to play backwards.</p>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
     <span class="n">substream</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">avdec</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;h264&quot;</span><span class="p">,</span> <span class="s2">&quot;h265&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;h264&quot;</span><span class="p">,</span>
+    <span class="n">avdec</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"h264"</span><span class="p">,</span> <span class="s2">"h265"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"h264"</span><span class="p">,</span>
     <span class="n">network_interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
@@ -3697,7 +4196,8 @@ You may use negative values to play backwards.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code></p>
+
 
 
         <p>This module collects and provides real RTSP streaming cameras.</p>
@@ -3711,7 +4211,9 @@ You may use negative values to play backwards.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3747,7 +4249,8 @@ You may use negative values to play backwards.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.simulated_camera.simulated_camera.SimulatedCamera">SimulatedCamera</span>]</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.simulated_camera.simulated_camera.SimulatedCamera">SimulatedCamera</span>]</code></p>
+
 
 
         <p>This module collects and simulates cameras and generates synthetic images.</p>
@@ -3762,7 +4265,9 @@ You may use negative values to play backwards.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3818,7 +4323,8 @@ You may use negative values to play backwards.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.usb_camera.usb_camera.UsbCamera">UsbCamera</span>]</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="CameraProvider (rosys.vision.camera_provider.CameraProvider)" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.usb_camera.usb_camera.UsbCamera">UsbCamera</span>]</code></p>
+
 
 
         <p>This module collects and provides real USB cameras.</p>
@@ -3834,7 +4340,9 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3878,6 +4386,7 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
               Bases: <code><span title="nicegui.elements.scene.objects.Group">Group</span></code></p>
 
 
+
         <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
 <p>It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
 The camera projector can be shared between clients: every visible CameraObjects holds it via acquire()/release(),
@@ -3897,7 +4406,9 @@ them small anyway; <code>image_quality</code> raises or lowers that quality (90 
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3963,10 +4474,10 @@ them small anyway; <code>image_quality</code> raises or lowers that quality (90 
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

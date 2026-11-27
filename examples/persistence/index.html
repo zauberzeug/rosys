@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -504,6 +504,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1672,12 +1700,12 @@ In particular, avoid to persist volatile things like wheel odometry or other sen
 <span class="k">class</span><span class="w"> </span><span class="nc">MySteerer</span><span class="p">(</span><span class="n">rosys</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">Persistable</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Steerer</span><span class="p">):</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">backup_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Backup&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;speed_scaling&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_scaling</span><span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Backup'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'speed_scaling'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_scaling</span><span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">restore_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Restore&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">speed_scaling</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;speed_scaling&#39;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Restore'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_scaling</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'speed_scaling'</span><span class="p">]</span>
 
 
 <span class="n">shape</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
@@ -1687,26 +1715,26 @@ In particular, avoid to persist volatile things like wheel odometry or other sen
 <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
 
 
-<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">():</span>
     <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">400</span><span class="p">):</span>
             <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">align_items</span><span class="o">=</span><span class="s1">&#39;stretch&#39;</span><span class="p">):</span>
-            <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">align_items</span><span class="o">=</span><span class="s1">'stretch'</span><span class="p">):</span>
+            <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'blue'</span><span class="p">)</span>
             <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">&#39;linear_velocity&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> m/s&#39;</span><span class="p">)</span>
-                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">&#39;angular_velocity&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> rad/s&#39;</span><span class="p">)</span>
-            <span class="n">ui</span><span class="o">.</span><span class="n">slider</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;label-always&#39;</span><span class="p">)</span> \
-                <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="s1">&#39;speed_scaling&#39;</span><span class="p">)</span> \
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">'linear_velocity'</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> m/s'</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">'angular_velocity'</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> rad/s'</span><span class="p">)</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">slider</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'label-always'</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="s1">'speed_scaling'</span><span class="p">)</span> \
                 <span class="o">.</span><span class="n">on_value_change</span><span class="p">(</span><span class="n">steerer</span><span class="o">.</span><span class="n">request_backup</span><span class="p">)</span>
-            <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Restart RoSys&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="s1">&#39;main.py&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;flat&#39;</span><span class="p">)</span>
-            <span class="n">rosys</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">export_button</span><span class="p">()</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;flat icon=&quot;download&quot;&#39;</span><span class="p">)</span>
-            <span class="n">rosys</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">import_button</span><span class="p">()</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;flat icon=&quot;upload_file&quot;&#39;</span><span class="p">)</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'Restart RoSys'</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="s1">'main.py'</span><span class="p">))</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'flat'</span><span class="p">)</span>
+            <span class="n">rosys</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">export_button</span><span class="p">()</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'flat icon="download"'</span><span class="p">)</span>
+            <span class="n">rosys</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">import_button</span><span class="p">()</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'flat icon="upload_file"'</span><span class="p">)</span>
 
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys - Persistence&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys - Persistence'</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="migration-from-the-old-persistentmodule-class">Migration from the old <code>PersistentModule</code> class<a class="headerlink" href="#migration-from-the-old-persistentmodule-class" title="Permanent link">&para;</a></h2>
 <p>The <code>PersistentModule</code> class has been replaced by the <code>Persistable</code> mixin in version 0.24.0.
@@ -1768,10 +1796,10 @@ To migrate, follow these steps:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

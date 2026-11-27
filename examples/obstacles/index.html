@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -504,6 +504,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1618,22 +1646,22 @@ Open a browser at location http://localhost:8080.</p>
 
     <span class="n">state</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span>
     <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="si">}</span><span class="s1">'</span>
     <span class="p">))</span>
 
     <span class="n">click_mode</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">toggle</span><span class="p">({</span>
-        <span class="s1">&#39;drive&#39;</span><span class="p">:</span> <span class="s1">&#39;Drive&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;navigate&#39;</span><span class="p">:</span> <span class="s1">&#39;Navigate&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;obstacles&#39;</span><span class="p">:</span> <span class="s1">&#39;Obstacles&#39;</span><span class="p">,</span>
-    <span class="p">},</span> <span class="n">value</span><span class="o">=</span><span class="s1">&#39;drive&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;outline&#39;</span><span class="p">)</span>
+        <span class="s1">'drive'</span><span class="p">:</span> <span class="s1">'Drive'</span><span class="p">,</span>
+        <span class="s1">'navigate'</span><span class="p">:</span> <span class="s1">'Navigate'</span><span class="p">,</span>
+        <span class="s1">'obstacles'</span><span class="p">:</span> <span class="s1">'Obstacles'</span><span class="p">,</span>
+    <span class="p">},</span> <span class="n">value</span><span class="o">=</span><span class="s1">'drive'</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'outline'</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_click</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">SceneClickEventArguments</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">click_type</span> <span class="o">!=</span> <span class="s1">&#39;dblclick&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">click_type</span> <span class="o">!=</span> <span class="s1">'dblclick'</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
-            <span class="n">object_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">object_name</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span>
+            <span class="n">object_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">object_name</span> <span class="ow">or</span> <span class="s1">''</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'_'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span>
             <span class="n">target</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;drive&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">'ground'</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'drive'</span><span class="p">:</span>
                 <span class="n">start</span> <span class="o">=</span> <span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">point</span>
                 <span class="n">path</span> <span class="o">=</span> <span class="p">[</span><span class="n">PathSegment</span><span class="p">(</span><span class="n">spline</span><span class="o">=</span><span class="n">Spline</span><span class="p">(</span>
                     <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
@@ -1644,7 +1672,7 @@ Open a browser at location http://localhost:8080.</p>
                 <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
                 <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
                 <span class="k">return</span>
-            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;navigate&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">'ground'</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'navigate'</span><span class="p">:</span>
                 <span class="n">goal</span> <span class="o">=</span> <span class="n">Pose</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
                             <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
                 <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
@@ -1652,7 +1680,7 @@ Open a browser at location http://localhost:8080.</p>
                 <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
                 <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
                 <span class="k">return</span>
-            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;obstacles&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">'ground'</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'obstacles'</span><span class="p">:</span>
                 <span class="n">id_</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
                 <span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span> <span class="o">=</span> <span class="n">Obstacle</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">id_</span><span class="p">,</span> <span class="n">outline</span><span class="o">=</span><span class="p">[</span>
                     <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="o">-</span><span class="mf">0.5</span><span class="p">),</span>
@@ -1662,8 +1690,8 @@ Open a browser at location http://localhost:8080.</p>
                 <span class="n">path_planner</span><span class="o">.</span><span class="n">request_backup</span><span class="p">()</span>
                 <span class="n">path_planner</span><span class="o">.</span><span class="n">OBSTACLES_CHANGED</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">)</span>
                 <span class="k">return</span>
-            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;obstacle&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;obstacles&#39;</span><span class="p">:</span>
-                <span class="k">del</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">'obstacle'</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'obstacles'</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'_'</span><span class="p">)[</span><span class="mi">1</span><span class="p">]]</span>
                 <span class="n">path_planner</span><span class="o">.</span><span class="n">request_backup</span><span class="p">()</span>
                 <span class="n">path_planner</span><span class="o">.</span><span class="n">OBSTACLES_CHANGED</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">)</span>
                 <span class="k">return</span>
@@ -1675,11 +1703,11 @@ Open a browser at location http://localhost:8080.</p>
 
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
         <span class="n">automation_controls</span><span class="p">(</span><span class="n">automator</span><span class="p">)</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;restart rosys&#39;</span><span class="p">,</span>
-                  <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="s1">&#39;main.py&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;outline&#39;</span><span class="p">)</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'restart rosys'</span><span class="p">,</span>
+                  <span class="n">on_click</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="s1">'main.py'</span><span class="p">))</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'outline'</span><span class="p">)</span>
 
 <span class="c1"># start</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;obstacles&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'obstacles'</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -1730,10 +1758,10 @@ Open a browser at location http://localhost:8080.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

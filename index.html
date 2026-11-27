@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -768,6 +768,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -2102,8 +2130,8 @@ a module kept in your robot assembly repeats until shutdown, while a short-lived
 
 
 <span class="n">cameras</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Camera</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">cameras</span><span class="p">[</span><span class="s1">&#39;front&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Camera</span><span class="p">()</span>  <span class="c1"># stored, so it repeats</span>
-<span class="k">del</span> <span class="n">cameras</span><span class="p">[</span><span class="s1">&#39;front&#39;</span><span class="p">]</span>         <span class="c1"># dropped, so the repetition ends without leaking</span>
+<span class="n">cameras</span><span class="p">[</span><span class="s1">'front'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Camera</span><span class="p">()</span>  <span class="c1"># stored, so it repeats</span>
+<span class="k">del</span> <span class="n">cameras</span><span class="p">[</span><span class="s1">'front'</span><span class="p">]</span>         <span class="c1"># dropped, so the repetition ends without leaking</span>
 </code></pre></div>
 <blockquote>
 <p>[!NOTE]
@@ -2142,7 +2170,17 @@ you should wrap the code in a function and await it with <code>await rosys.run.i
 If you need to do some heavy computation and want to spawn another process,
 you should wrap the code in a function and await it with <code>await rosys.run.cpu_bound(...)</code>.</p>
 <p>RoSys starts helper processes (MJPEG stream workers, path planning) with the <code>spawn</code> start method, which re-imports your main script in the child.
-A script that creates these at import time must therefore put its startup under <code>if __name__ == '__main__':</code>, or the helpers start recursively.</p>
+A script that creates these at import time must therefore put its startup under <code>if __name__ == '__main__':</code>, or the helpers start recursively.
+The workers of <code>rosys.run.cpu_bound</code> are spawned as well, so anything your main script does at import time runs once per worker.
+A worker that opens the serial port a second time disturbs the running connection to the microcontroller:
+it resets the baud rate and flushes the input, which corrupts incoming lines.
+So create such hardware under <code>if __name__ == '__main__':</code> and pass <code>reload=False</code> to <code>ui.run</code>, as in the <a href="https://rosys.io/examples/cameras/">remote camera example</a>.
+With <code>reload=True</code> the guard does not help, because the server itself then runs as <code>__mp_main__</code>, just like the workers.</p>
+<p>Spawned workers also cost memory and start-up time:
+on a Jetson Orin, six workers of a bare RoSys app take about 700 MB, and the first round of calls waits about 3 seconds for them.
+An application can choose another start method by setting <code>nicegui.run.process_pool_start_method</code> before calling <code>ui.run</code>.
+<code>'forkserver'</code> saves most of the memory but still re-imports the main script.
+<code>'fork'</code> avoids both, but NiceGUI considers it unsafe in a process that runs threads.</p>
 <h3 id="safety">Safety<a class="headerlink" href="#safety" title="Permanent link">&para;</a></h3>
 <p>Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be put on a suitable microcontroller.
@@ -2223,10 +2261,10 @@ We are always here to support and guide you through the contribution process.</p
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["content.code.annotate"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["content.code.annotate"], "search": "assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

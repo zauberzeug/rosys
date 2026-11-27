@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -502,6 +502,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1108,6 +1136,17 @@
     <span class="md-ellipsis">
       
         message_count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.analysis.recording.McapRecorder.protected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protected
       
     </span>
   </a>
@@ -2273,6 +2312,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rosys.analysis.recording.McapRecorder.protected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.analysis.recording.McapRecorder.recordings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2814,6 +2864,7 @@
               Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
 
 
+
         <p>One log line, taken off a :class:<code>logging.LogRecord</code> before it is queued.</p>
 <p>The message is rendered where the line is logged, so the recording holds what the line
 said at that moment rather than what its arguments hold once the writer gets to it.</p>
@@ -2827,7 +2878,9 @@ said at that moment rather than what its arguments hold once the writer gets to 
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2854,12 +2907,13 @@ said at that moment rather than what its arguments hold once the writer gets to 
 
 
 <a href="#rosys.analysis.recording.McapLogHandler" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">McapLogHandler</span><span class="p">(</span><span class="n">recorder</span><span class="p">:</span> <span class="n">McapRecorder</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;/log&#39;</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">McapLogHandler</span><span class="p">(</span><span class="n">recorder</span><span class="p">:</span> <span class="n">McapRecorder</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/log'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
               Bases: <code><span title="logging.Handler">Handler</span></code></p>
+
 
 
         <p>Writes what a logger logs into the recording, so a recording explains itself.</p>
@@ -2888,7 +2942,7 @@ thread.</p>
                 <code>recorder</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="rosys.analysis.recording.mcap_recorder.McapRecorder" href="#rosys.analysis.recording.McapRecorder">McapRecorder</a></code>
+                  <code><a class="autorefs autorefs-internal" title="McapRecorder (rosys.analysis.recording.mcap_recorder.McapRecorder)" href="#rosys.analysis.recording.McapRecorder">McapRecorder</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2927,7 +2981,9 @@ thread.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -2956,22 +3012,23 @@ thread.</p>
 <a href="#rosys.analysis.recording.McapRecorder" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">McapRecorder</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">output_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;~/.rosys/mcap&quot;</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"~/.rosys/mcap"</span><span class="p">,</span>
     <span class="n">max_part_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
     <span class="n">max_part_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_total_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
     <span class="n">max_kept_size_mb</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span>
     <span class="n">flush_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys&quot;</span><span class="p">,</span>
-    <span class="n">library</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys-mcap-recorder&quot;</span><span class="p">,</span>
-    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rosys.mcap_recorder&quot;</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys"</span><span class="p">,</span>
+    <span class="n">library</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys-mcap-recorder"</span><span class="p">,</span>
+    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rosys.mcap_recorder"</span><span class="p">,</span>
     <span class="n">auto_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">max_queued_bytes</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">MAX_QUEUED_BYTES</span>
 <span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
+
 
 
         <p>Records sensor data to MCAP files for replay and analysis in Foxglove Studio.</p>
@@ -2985,6 +3042,10 @@ first, whichever folder it sits in; kept recordings have a bound of their own so
 cannot eat the rolling window. A merge holds its sources open, so the space the budget
 frees during one only returns when the merge finishes, and the peak then also carries
 the merge's size.</p>
+<p>The budget spares kept recordings named in :attr:<code>protected</code> (e.g. not uploaded yet) unless they
+alone exceed it; then it deletes them too and emits :attr:<code>PROTECTED_RECORDING_DELETED</code>. They count
+toward <code>max_kept_size_mb</code> without ever being deleted by it, so protecting more than that bound
+silently deletes every other kept recording but the newest: keep protection well below it.</p>
 <p>Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
 single background consumer via <code>rosys.run.io_bound</code> so that encoding, ZSTD compression
 and file I/O never block the loop. Encoding runs on the writer too: sources enqueue the
@@ -3098,7 +3159,7 @@ is therefore <code>max_total_size_mb + max_part_size_mb</code>, as the growing p
             <td>
               <div class="doc-md-description">
                 <p>bound for kept recordings within the budget; beyond it the oldest are
-deleted, sparing the newest (the one just filed away) however large it is.</p>
+deleted, sparing the newest (the one just filed away) however large it is and every protected one.</p>
               </div>
             </td>
             <td>
@@ -3232,7 +3293,8 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -3364,6 +3426,30 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
 
 
 
+<h3 id="rosys.analysis.recording.McapRecorder.protected" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">protected</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.analysis.recording.McapRecorder.protected" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">protected</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>names of kept recordings the disk budget spares; replace it whole, the writer thread reads it</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h3 id="rosys.analysis.recording.McapRecorder.recordings" class="doc doc-heading">
             <span class="doc doc-object-name doc-attribute-name">recordings</span>
 
@@ -3431,6 +3517,7 @@ writer cannot exhaust memory with raw camera frames (see :data:<code>MAX_QUEUED_
     </div>
 
 </div>
+
 
 
 
@@ -3538,7 +3625,7 @@ thread-safely. Outside a running loop (e.g. a synchronous unit test) the call is
     <div class="doc doc-contents ">
 
         <p>Delete the oldest recordings until the kept ones fit <code>max_kept_size</code> and all fit <code>max_total_size</code>.</p>
-<p>The kept bound spares the newest kept recording; the total is then met oldest first across both folders.</p>
+<p>See :func:<code>.budget.select_deletions</code>.</p>
 
 
     </div>
@@ -4477,16 +4564,6 @@ this recorder.</p>
               </div>
             </td>
           </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code>RuntimeError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>if the app shut down before the merge ran; the sources are kept.</p>
-              </div>
-            </td>
-          </tr>
       </tbody>
     </table>
 
@@ -4645,7 +4722,7 @@ recordings page) are skipped.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="rosys.analysis.recording.mcap_recorder.RecordingInfo" href="#rosys.analysis.recording.RecordingInfo">RecordingInfo</a>]</code>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="RecordingInfo (rosys.analysis.recording.mcap_recorder.RecordingInfo)" href="#rosys.analysis.recording.RecordingInfo">RecordingInfo</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4833,9 +4910,7 @@ previous one is still being finalized.</p>
         <p>Stop recording, drain the queue, and finalize the file off the event loop.</p>
 <p>The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
 the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
-via :func:<code>asyncio.to_thread</code> — deliberately not <code>rosys.run.io_bound</code>, which refuses
-work once the app is stopping (and <code>stop</code> is wired to <code>rosys.on_shutdown</code>) — so it
-never blocks the event loop; <code>start()</code> is refused meanwhile. A final part without
+via <code>rosys.run.io_bound</code>, so it never blocks the event loop; <code>start()</code> is refused meanwhile. A final part without
 messages is discarded, otherwise <code>RECORDING_STOPPED</code> is emitted with its path.</p>
 
 
@@ -4959,6 +5034,10 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
 <td>RECORDING_STOPPED</td>
 <td>a recording file has been finalized (argument: path); emitted per file, including on every rotation</td>
 </tr>
+<tr>
+<td>PROTECTED_RECORDING_DELETED</td>
+<td>the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)</td>
+</tr>
 </tbody>
 </table>
 
@@ -4979,6 +5058,7 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
               Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
 
 
+
         <p>A snapshot of one recording's on-disk facts, gathered off the event loop.</p>
 
 
@@ -4990,7 +5070,9 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -5023,6 +5105,10 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
 <td>RECORDING_STOPPED</td>
 <td>a recording file has been finalized (argument: path); emitted per file, including on every rotation</td>
 </tr>
+<tr>
+<td>PROTECTED_RECORDING_DELETED</td>
+<td>the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)</td>
+</tr>
 </tbody>
 </table>
 
@@ -5043,6 +5129,7 @@ failing <code>sample</code> does not mute a later <code>encode</code> failure on
               Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
 
 
+
         <p>A topic data source whose lifetime is bound to the recorder's recording state.</p>
 <p>Sources are activated when recording starts and deactivated when it stops, so
 event subscriptions and timers only run while a recording is actually open.</p>
@@ -5056,7 +5143,9 @@ event subscriptions and timers only run while a recording is actually open.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -5089,6 +5178,10 @@ event subscriptions and timers only run while a recording is actually open.</p>
 <td>RECORDING_STOPPED</td>
 <td>a recording file has been finalized (argument: path); emitted per file, including on every rotation</td>
 </tr>
+<tr>
+<td>PROTECTED_RECORDING_DELETED</td>
+<td>the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)</td>
+</tr>
 </tbody>
 </table>
 
@@ -5110,6 +5203,7 @@ event subscriptions and timers only run while a recording is actually open.</p>
 </code></pre></div>
 
     <div class="doc doc-contents first">
+
 
 
         <p>Lists the MCAP recordings for download and deletion.</p>
@@ -5143,7 +5237,7 @@ HTTP by basename from the top level or the parts folder (refusing the live file 
                 <code>recorder</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="rosys.analysis.recording.mcap_recorder.McapRecorder" href="#rosys.analysis.recording.McapRecorder">McapRecorder</a></code>
+                  <code><a class="autorefs autorefs-internal" title="McapRecorder (rosys.analysis.recording.mcap_recorder.McapRecorder)" href="#rosys.analysis.recording.McapRecorder">McapRecorder</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5183,7 +5277,9 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -5217,6 +5313,7 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
               Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
 
 
+
         <p>Everything the writer needs to register a topic's channel and schema.</p>
 
 
@@ -5228,7 +5325,9 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -5260,6 +5359,10 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
 <tr>
 <td>RECORDING_STOPPED</td>
 <td>a recording file has been finalized (argument: path); emitted per file, including on every rotation</td>
+</tr>
+<tr>
+<td>PROTECTED_RECORDING_DELETED</td>
+<td>the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)</td>
 </tr>
 </tbody>
 </table>
@@ -5312,10 +5415,10 @@ content (e.g. a shared application header or navigation); <code>None</code> rend
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

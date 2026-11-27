@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/examples/hardware/">
       
       
-        <link rel="prev" href="../coordinate-frames/">
+        <link rel="prev" href="../detector_masks/">
       
       
         <link rel="next" href="../hello_bot/">
@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -504,6 +504,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1701,12 +1729,12 @@ The following example illustrates how to implement a <code>CustomWheelsHardware<
 
 <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">&#39;linear_target_speed&#39;</span><span class="p">,</span>
-                          <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;Linear: </span><span class="si">{</span><span class="n">l</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> m/s&#39;</span><span class="p">)</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">&#39;angular_target_speed&#39;</span><span class="p">,</span>
-                          <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;Angular: </span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> rad/s&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">'linear_target_speed'</span><span class="p">,</span>
+                          <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'Linear: </span><span class="si">{</span><span class="n">l</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> m/s'</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="s1">'angular_target_speed'</span><span class="p">,</span>
+                          <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'Angular: </span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> rad/s'</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p>Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
 By raising an exception if the real hardware is not available, a simulated robot is instantiated instead.
@@ -1752,7 +1780,7 @@ The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which 
     <span class="n">communication</span><span class="o">.</span><span class="n">debug_ui</span><span class="p">()</span>
     <span class="n">robot_brain</span><span class="o">.</span><span class="n">developer_ui</span><span class="p">()</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p>With <code>communication.debug_ui()</code> you can add some helpful UI elements for debugging the serial communication.
 Furthermore, with <code>robot_brain.developer_ui()</code> you can add UI elements to configure and reboot <a href="https://lizard.dev/">Lizard</a>.</p>
@@ -1767,7 +1795,7 @@ Furthermore, with <code>robot_brain.developer_ui()</code> you can add UI element
 <span class="n">wheels</span> <span class="o">=</span> <span class="n">ODriveWheels</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
 <span class="n">wheels</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="mf">0.515</span>
 
-<span class="n">core</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="s2">&quot;core.millis wheels.linear_speed:3 wheels.angular_speed:3&quot;</span><span class="p">)</span>
+<span class="n">core</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="s2">"core.millis wheels.linear_speed:3 wheels.angular_speed:3"</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -1818,10 +1846,10 @@ Furthermore, with <code>robot_brain.developer_ui()</code> you can add UI element
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

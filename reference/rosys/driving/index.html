@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -502,6 +502,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -2170,6 +2198,7 @@
     <div class="doc doc-contents first">
 
 
+
         <p>The driver module allows following a given path.</p>
 <p>It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
 It also requires a pose_provider to get a current prediction of the robot's pose.
@@ -2184,7 +2213,8 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -2215,6 +2245,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
     </div>
 
 </div>
+
 
 
 
@@ -2773,7 +2804,8 @@ the robot stops driving.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.driving.pose_provider.PoseProvider" href="#rosys.driving.PoseProvider">PoseProvider</a></code>, <code><a class="autorefs autorefs-internal" title="rosys.geometry.FrameProvider" href="../geometry/#rosys.geometry.FrameProvider">FrameProvider</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="PoseProvider (rosys.driving.pose_provider.PoseProvider)" href="#rosys.driving.PoseProvider">PoseProvider</a></code>, <code><a class="autorefs autorefs-internal" title="FrameProvider (rosys.geometry.FrameProvider)" href="../geometry/#rosys.geometry.FrameProvider">FrameProvider</a></code></p>
+
 
 
         <p>An odometer collects velocity information from a given wheels module (or any velocity-providing hardware representation).</p>
@@ -2790,7 +2822,8 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -2821,6 +2854,7 @@ Given the history of previously received velocities, it can update its predictio
     </div>
 
 </div>
+
 
 
 
@@ -2871,6 +2905,7 @@ Given the history of previously received velocities, it can update its predictio
               Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
 
 
+
         <p>Protocol for objects that provide a 2D Pose.</p>
 
 
@@ -2882,7 +2917,8 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -2918,6 +2954,7 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
+
   </div>
 
     </div>
@@ -2939,6 +2976,7 @@ Given the history of previously received velocities, it can update its predictio
     <div class="doc doc-contents first">
 
 
+
         <p>The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.</p>
 <p>The wheels module can be any drivable hardware representation.
 Changing the steering state emits events that can be used to react to manual user interaction.</p>
@@ -2952,7 +2990,9 @@ Changing the steering state emits events that can be used to react to manual use
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3009,7 +3049,9 @@ Changing the steering state emits events that can be used to react to manual use
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3035,6 +3077,7 @@ Changing the steering state emits events that can be used to react to manual use
               Bases: <code><span title="nicegui.elements.scene.objects.Group">Group</span></code></p>
 
 
+
         <p>The DriverObject UI element displays the path following process in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 An optional driver module shows debugging information about a current path-following process.
@@ -3049,7 +3092,9 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3093,6 +3138,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
               Bases: <code><span title="nicegui.ui.joystick">joystick</span></code></p>
 
 
+
         <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
 
 
@@ -3104,7 +3150,9 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3143,6 +3191,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     <div class="doc doc-contents first">
 
 
+
         <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
 <p>Hold shift while pressing an arrow key to steer the robot.
 You can change the speed with the number keys 1 to 9 and the initial speed via the <code>default_speed</code> argument.</p>
@@ -3156,7 +3205,9 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3208,6 +3259,7 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
               Bases: <code><span title="nicegui.elements.scene.objects.Group">Group</span></code></p>
 
 
+
         <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
@@ -3221,7 +3273,9 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -3249,7 +3303,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     <span class="n">phi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">kappa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#ffffff&quot;</span><span class="p">,</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"#ffffff"</span><span class="p">,</span>
     <span class="n">opacity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RobotObject</span>
 </code></pre></div>
@@ -3320,10 +3374,10 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

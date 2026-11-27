@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -610,6 +610,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1742,7 +1770,7 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 
 <span class="c1"># setup</span>
 <span class="n">shape</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
-<span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="o">.</span><span class="n">search_paths</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">]</span>
+<span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="o">.</span><span class="n">search_paths</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">]</span>
 <span class="n">is_real</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">()</span>
 <span class="n">wheels</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">Wheels</span>
 <span class="n">robot</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">Robot</span>
@@ -1768,13 +1796,13 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
     <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;hold SHIFT to steer with the keyboard arrow keys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">'hold SHIFT to steer with the keyboard arrow keys'</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">is_real</span><span class="p">:</span>
-    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;configure microcontroller&#39;</span><span class="p">,</span>
-              <span class="n">on_click</span><span class="o">=</span><span class="n">robot_brain</span><span class="o">.</span><span class="n">configure</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;outline&#39;</span><span class="p">)</span>
+    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">'configure microcontroller'</span><span class="p">,</span>
+              <span class="n">on_click</span><span class="o">=</span><span class="n">robot_brain</span><span class="o">.</span><span class="n">configure</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">'outline'</span><span class="p">)</span>
 
 <span class="c1"># start</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'RoSys'</span><span class="p">)</span>
 </code></pre></div>
 <p>If you launch the program, your browser will open the url <a href="http://0.0.0.0:8080/">http://0.0.0.0:8080/</a> and present a 3d view:</p>
 <p><img alt="Screenshot" src="screenshot.png" style="width:60%" /></p>
@@ -1845,10 +1873,10 @@ This is very convenient, but can be deactivated by passing <code>reload=False</c
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

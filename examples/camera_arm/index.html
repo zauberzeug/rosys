@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
       
 
@@ -514,6 +514,34 @@
     
   
     Coordinate-Frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detector_masks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detector Masks
   
 
     
@@ -1592,8 +1620,8 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">()</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">parent_frame</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_base&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">length</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_end&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">()</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">parent_frame</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_base'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">length</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_end'</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pitch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angle</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -1601,15 +1629,15 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">backup_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s1">&#39;base&#39;</span><span class="p">:</span> <span class="n">persistence</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">),</span>
+            <span class="s1">'name'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">'base'</span><span class="p">:</span> <span class="n">persistence</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">),</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">restore_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">Frame3d</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">Frame3d</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">'base'</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_end&#39;</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_end'</span><span class="p">)</span> \
             <span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
 
 
@@ -1624,19 +1652,19 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">request_backup</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">backup_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;pose&#39;</span><span class="p">:</span> <span class="n">persistence</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pose</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'pose'</span><span class="p">:</span> <span class="n">persistence</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pose</span><span class="p">)}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">restore_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pose</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">Frame3d</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;pose&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pose</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">Frame3d</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">'pose'</span><span class="p">])</span>
 
 
-<span class="n">anchor_frame</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;anchor&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
-<span class="n">arm1</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">&#39;arm1&#39;</span><span class="p">,</span> <span class="n">anchor_frame</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;arm1&#39;</span><span class="p">)</span>
-<span class="n">arm2</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">&#39;arm2&#39;</span><span class="p">,</span> <span class="n">arm1</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;arm2&#39;</span><span class="p">)</span>
-<span class="n">cam</span> <span class="o">=</span> <span class="n">Cam</span><span class="p">(</span><span class="n">arm2</span><span class="o">.</span><span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;cam&#39;</span><span class="p">)</span>
+<span class="n">anchor_frame</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">'anchor'</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
+<span class="n">arm1</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">'arm1'</span><span class="p">,</span> <span class="n">anchor_frame</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'arm1'</span><span class="p">)</span>
+<span class="n">arm2</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">'arm2'</span><span class="p">,</span> <span class="n">arm1</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'arm2'</span><span class="p">)</span>
+<span class="n">cam</span> <span class="o">=</span> <span class="n">Cam</span><span class="p">(</span><span class="n">arm2</span><span class="o">.</span><span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'cam'</span><span class="p">)</span>
 
 
-<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">():</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">update_scene</span><span class="p">():</span>
         <span class="n">chassis</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span>
@@ -1654,7 +1682,7 @@
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="k">as</span> <span class="n">scene</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">scene</span><span class="o">.</span><span class="n">group</span><span class="p">()</span> <span class="k">as</span> <span class="n">chassis</span><span class="p">:</span>
                 <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span> \
-                    <span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">'gray'</span><span class="p">)</span>
             <span class="k">with</span> <span class="n">scene</span><span class="o">.</span><span class="n">group</span><span class="p">()</span> <span class="k">as</span> <span class="n">segment1</span><span class="p">:</span>
                 <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">arm1</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> \
                     <span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">arm1</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
@@ -1663,10 +1691,10 @@
                     <span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">arm2</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
             <span class="k">with</span> <span class="n">scene</span><span class="o">.</span><span class="n">group</span><span class="p">()</span> <span class="k">as</span> <span class="n">camera_box</span><span class="p">:</span>
                 <span class="n">scene</span><span class="o">.</span><span class="n">box</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span> \
-                    <span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;SteelBlue&#39;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">'SteelBlue'</span><span class="p">)</span>
             <span class="n">scene</span><span class="o">.</span><span class="n">move_camera</span><span class="p">(</span><span class="n">y</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">look_at_z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">():</span>
-            <span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+            <span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'blue'</span><span class="p">)</span>
             <span class="n">ui</span><span class="o">.</span><span class="n">slider</span><span class="p">(</span><span class="nb">min</span><span class="o">=-</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                       <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">arm1</span><span class="o">.</span><span class="n">pitch</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
             <span class="n">ui</span><span class="o">.</span><span class="n">slider</span><span class="p">(</span><span class="nb">min</span><span class="o">=-</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -1675,13 +1703,13 @@
                       <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">cam</span><span class="o">.</span><span class="n">pitch</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">()</span> <span class="k">as</span> <span class="n">scene2</span><span class="p">:</span>
             <span class="n">axes_object</span><span class="p">(</span><span class="n">anchor_frame</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
-            <span class="n">axes_object</span><span class="p">(</span><span class="n">arm1</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Arm 1 Base&#39;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
-            <span class="n">axes_object</span><span class="p">(</span><span class="n">arm2</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Arm 2 Base&#39;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
-            <span class="n">axes_object</span><span class="p">(</span><span class="n">cam</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Camera&#39;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+            <span class="n">axes_object</span><span class="p">(</span><span class="n">arm1</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'Arm 1 Base'</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+            <span class="n">axes_object</span><span class="p">(</span><span class="n">arm2</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'Arm 2 Base'</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+            <span class="n">axes_object</span><span class="p">(</span><span class="n">cam</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'Camera'</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
             <span class="n">scene2</span><span class="o">.</span><span class="n">move_camera</span><span class="p">(</span><span class="n">y</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">look_at_z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Camera Arm&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Camera Arm'</span><span class="p">)</span>
 </code></pre></div>
 
 
@@ -1732,10 +1760,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
