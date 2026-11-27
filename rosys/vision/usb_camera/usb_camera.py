@@ -102,6 +102,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         elif self.crop or self.rotation != ImageRotation.NONE:
             image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
         else:
+            # NOTE TurboJPEG and PIL release the GIL while decoding, so a thread suffices and saves the process round trip
             image_array = await rosys.run.io_bound(decode_jpeg_image, image_data)
 
         if image_array is None:

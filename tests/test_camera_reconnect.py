@@ -457,13 +457,15 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
         return ''
 
     frames: list = []
-    with patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()), \
+    capture = FakeCapture()
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: capture), \
             patch.object(UsbDevice, 'run_v4l', slow_v4l), \
             patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
         device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
                            reconnect_interval=0.3)
         try:
             await forward_until(probing.is_set, real_step=0.02, message='device did not probe its formats')
+            assert not device.is_connected, 'the device counted as connected before its formats were probed'
             shutdown = asyncio.ensure_future(device.shutdown())
             await asyncio.sleep(0)  # let shutdown() cancel the capture task before the probe finishes
             finish_probe.set()
@@ -473,6 +475,7 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
                 await forward(0.3)
                 await asyncio.sleep(0.02)
             assert not device.is_connected
+            assert not capture.isOpened(), 'the capture opened for probing was not released'
             assert not frames, 'the capture loop resumed streaming after shutdown'
         finally:
             await device.shutdown()

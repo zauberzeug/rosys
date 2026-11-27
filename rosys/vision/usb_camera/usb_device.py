@@ -124,13 +124,17 @@ class UsbDevice(CaptureDevice):
                 self.log.warning('[%s] cannot open %s; another process may be using it', self.uid, device_node)
             return
         self._unavailable_node = None
-        self.log.info('[%s] connected on %s', self.uid, device_node)
         self._device_node = device_node
-        self._capture = capture
-        await self.load_value_ranges()
-        if not self._keeps_running():
-            await self._release()
+        try:
+            await self.load_value_ranges()
+        except BaseException:
+            await rosys.run.io_bound(self._release_capture, capture)
+            raise
+        if not self._keeps_running():  # shut down while probing
+            await rosys.run.io_bound(self._release_capture, capture)
             return
+        self.log.info('[%s] connected on %s', self.uid, device_node)
+        self._capture = capture  # NOTE only now the device counts as connected and accepts parameters
         self.set_video_format()
         await self._enter_streaming()
 
@@ -161,7 +165,7 @@ class UsbDevice(CaptureDevice):
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
         # NOTE kernels since 5.9 call the control "exposure_time_absolute", older ones "exposure_absolute"
-        match = re.search(r'exposure(?:_time)?_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
+        match = re.search(r'exposure(?:_time)?_absolute.*: min=(\d+).*max=(\d+).*default=(\d+).*', output)
         if match is not None:
             self._has_manual_exposure = True
             self._exposure_min = int(match.group(1))
@@ -175,7 +179,7 @@ class UsbDevice(CaptureDevice):
         matches = re.finditer(r"(?:\[\d+\]|Pixel Format)\s*:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
-        if not self._video_formats:
+        if output and not self._video_formats:
             self.log.warning('[%s] no video formats found; v4l2-ctl --list-formats returned %r', self.uid, output)
 
     async def run_v4l(self, *args) -> str:
