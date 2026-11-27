@@ -124,10 +124,21 @@ class UsbDevice(CaptureDevice):
                 self.log.warning('[%s] cannot open %s; another process may be using it', self.uid, device_node)
             return
         self._unavailable_node = None
-        self.log.info('[%s] connected on %s', self.uid, device_node)
         self._device_node = device_node
-        self._capture = capture
-        self.set_video_format()
+        try:
+            await self.load_value_ranges()
+            if self._keeps_running():
+                # NOTE before the parameters, so their read-back reflects the MJPEG stream;
+                # in a thread, since OpenCV restarts the stream for the switch
+                await rosys.run.io_bound(self._set_video_format, capture)
+        except BaseException:
+            await rosys.run.io_bound(self._release_capture, capture)
+            raise
+        if not self._keeps_running():  # shut down while probing the formats or switching to MJPEG
+            await rosys.run.io_bound(self._release_capture, capture)
+            return
+        self.log.info('[%s] connected on %s', self.uid, device_node)
+        self._capture = capture  # NOTE only now the device counts as connected and accepts parameters
         await self._enter_streaming()
 
     async def _release(self) -> None:
@@ -144,6 +155,10 @@ class UsbDevice(CaptureDevice):
         with self._capture_lock:
             capture.release()
 
+    def _set_video_format(self, capture: cv2.VideoCapture) -> None:
+        with self._capture_lock:  # a release from shutdown() must wait for the format switch
+            self.set_video_format(capture)
+
     async def _tear_down_session(self) -> None:
         await self._release()
 
@@ -156,9 +171,8 @@ class UsbDevice(CaptureDevice):
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
-        if output is None:
-            return
-        match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
+        # NOTE kernels since 5.9 call the control "exposure_time_absolute", older ones "exposure_absolute"
+        match = re.search(r'exposure(?:_time)?_absolute.*: min=(\d+).*max=(\d+).*default=(\d+).*', output)
         if match is not None:
             self._has_manual_exposure = True
             self._exposure_min = int(match.group(1))
@@ -167,33 +181,44 @@ class UsbDevice(CaptureDevice):
         else:
             self._has_manual_exposure = False
         output = await self.run_v4l('--list-formats')
-        matches = re.finditer(r"$.*'(.*)'.*", output)
+        self._video_formats.clear()
+        # NOTE v4l-utils since 1.20 list "[0]: 'MJPG' (Motion-JPEG, compressed)", older ones "Pixel Format: 'MJPG'"
+        matches = re.finditer(r"(?:\[\d+\]|Pixel Format)\s*:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
+        if not self._video_formats:
+            self.log.warning('[%s] could not detect video formats (v4l2-ctl --list-formats returned %r); '
+                             'staying with the raw format', self.uid, output)
 
     async def run_v4l(self, *args) -> str:
         if self._device_node is None:
             return ''
         cmd = ['v4l2-ctl', '-d', self._device_node]
         cmd.extend(args)
-        return await rosys.run.sh(cmd)
+        # NOTE querying all controls can take a while on a loaded system; a timeout would leave the camera on the raw format
+        return await rosys.run.sh(cmd, timeout=5)
 
-    def set_video_format(self) -> None:
-        if self._capture is None:
+    def set_video_format(self, capture: cv2.VideoCapture) -> None:
+        """Switch the capture to MJPEG if the camera offers it."""
+        self._image_is_jpg = False
+        if 'MJPG' not in self._video_formats:
             return
-        if 'MJPG' in self._video_formats:
-            # NOTE enforcing motion jpeg for now
-            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            self._image_is_jpg = True
-        else:
-            self._image_is_jpg = False
+        # NOTE enforcing motion jpeg for now
+        if capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+            capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            if capture.get(cv2.CAP_PROP_FOURCC) != MJPG:  # the driver may refuse MJPEG, e.g. at this resolution
+                self.log.warning('[%s] could not switch to MJPEG; staying with the raw format', self.uid)
+                return
+        # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
+        if capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+            capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            if capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:  # decoded frames must not pass as JPEG bytes
+                self.log.warning('[%s] could not disable frame decoding; passing on decoded MJPEG frames', self.uid)
+                return
+        # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
+        if capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+            capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        self._image_is_jpg = True
 
     def set_auto_exposure(self, auto: bool) -> None:
         if self._capture is None:
