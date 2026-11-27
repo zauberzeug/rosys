@@ -186,8 +186,9 @@ class UsbDevice(CaptureDevice):
         matches = re.finditer(r"(?:\[\d+\]|Pixel Format)\s*:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
-        if output and not self._video_formats:
-            self.log.warning('[%s] no video formats found; v4l2-ctl --list-formats returned %r', self.uid, output)
+        if not self._video_formats:
+            self.log.warning('[%s] could not detect video formats (v4l2-ctl --list-formats returned %r); '
+                             'staying with the raw format', self.uid, output)
 
     async def run_v4l(self, *args) -> str:
         if self._device_node is None:
@@ -197,12 +198,10 @@ class UsbDevice(CaptureDevice):
         # NOTE querying all controls can take a while on a loaded system; a timeout would leave the camera on the raw format
         return await rosys.run.sh(cmd, timeout=5)
 
-    def set_video_format(self, capture: cv2.VideoCapture | None = None) -> None:
-        """Switch the capture (by default the connected one) to MJPEG if the camera offers it."""
-        if capture is None:
-            capture = self._capture
+    def set_video_format(self, capture: cv2.VideoCapture) -> None:
+        """Switch the capture to MJPEG if the camera offers it."""
         self._image_is_jpg = False
-        if capture is None or 'MJPG' not in self._video_formats:
+        if 'MJPG' not in self._video_formats:
             return
         # NOTE enforcing motion jpeg for now
         if capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
