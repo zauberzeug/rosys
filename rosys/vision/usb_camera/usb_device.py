@@ -135,9 +135,10 @@ class UsbDevice(CaptureDevice):
             return
         self.log.info('[%s] connected on %s', self.uid, device_node)
         self._capture = capture  # NOTE only now the device counts as connected and accepts parameters
-        await self._enter_streaming()
-        # NOTE after the parameters, so MJPEG is negotiated at the configured resolution; in a thread, since OpenCV restarts the stream
+        # NOTE before the parameters, so their read-back reflects the MJPEG stream;
+        # in a thread, since OpenCV restarts the stream for the switch
         await rosys.run.io_bound(self._set_video_format)
+        await self._enter_streaming()
 
     async def _release(self) -> None:
         if self._capture is not None:

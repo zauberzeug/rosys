@@ -612,8 +612,8 @@ async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_in
             assert camera.images[0].array.shape == (8, 8, 3)
             cpu_bound.assert_not_called()
             set_calls = captures[0].set_calls
-            assert set_calls.index(cv2.CAP_PROP_FOURCC) > set_calls.index(cv2.CAP_PROP_FRAME_HEIGHT), \
-                'MJPEG must be negotiated after the resolution is applied'
+            assert set_calls.index(cv2.CAP_PROP_FOURCC) < set_calls.index(cv2.CAP_PROP_FRAME_HEIGHT), \
+                'MJPEG must be negotiated before the parameters, so their read-back reflects the MJPEG stream'
         finally:
             await camera.disconnect()
 
