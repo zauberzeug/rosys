@@ -160,9 +160,8 @@ class UsbDevice(CaptureDevice):
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
-        if output is None:
-            return
-        match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
+        # NOTE kernels since 5.9 call the control "exposure_time_absolute", older ones "exposure_absolute"
+        match = re.search(r'exposure(?:_time)?_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
         if match is not None:
             self._has_manual_exposure = True
             self._exposure_min = int(match.group(1))
@@ -172,9 +171,12 @@ class UsbDevice(CaptureDevice):
             self._has_manual_exposure = False
         output = await self.run_v4l('--list-formats')
         self._video_formats.clear()
-        matches = re.finditer(r"\[\d+\]:\s*'([^']*)'", output)
+        # NOTE v4l-utils since 1.20 list "[0]: 'MJPG' (Motion-JPEG, compressed)", older ones "Pixel Format: 'MJPG'"
+        matches = re.finditer(r"(?:\[\d+\]|Pixel Format)\s*:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
+        if not self._video_formats:
+            self.log.warning('[%s] no video formats found; v4l2-ctl --list-formats returned %r', self.uid, output)
 
     async def run_v4l(self, *args) -> str:
         if self._device_node is None:

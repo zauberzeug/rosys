@@ -40,7 +40,7 @@ from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_chan
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
-from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
+from rosys.vision.usb_camera.usb_device import MJPG, UsbDevice, find_device_node
 
 # GOODCAM has a URL in both the RTSP and MJPEG vendor tables and no settings interface, so no network access
 GOODCAM_MAC = '2c:6f:51:00:00:01'
@@ -367,6 +367,39 @@ class FakeCapture:
         return True
 
 
+V4L2_CTL_OUTPUTS = {
+    'current': {
+        '--all': 'exposure_time_absolute 0x009a0902 (int)    : min=3 max=2047 step=1 default=250 value=250\n',
+        '--list-formats': 'ioctl: VIDIOC_ENUM_FMT\n'
+                          '\tType: Video Capture\n'
+                          '\n'
+                          "\t[0]: 'YUYV' (YUYV 4:2:2)\n"
+                          "\t[1]: 'MJPG' (Motion-JPEG, compressed)\n",
+    },
+    'legacy': {  # kernels before 5.9 and v4l-utils before 1.20, e.g. Ubuntu 20.04
+        '--all': 'exposure_absolute (int)    : min=3 max=2047 step=1 default=250 value=250\n',
+        '--list-formats': 'ioctl: VIDIOC_ENUM_FMT\n'
+                          '\tIndex       : 0\n'
+                          '\tType        : Video Capture\n'
+                          "\tPixel Format: 'YUYV'\n"
+                          '\tName        : YUYV 4:2:2\n'
+                          '\n'
+                          '\tIndex       : 1\n'
+                          '\tType        : Video Capture\n'
+                          "\tPixel Format: 'MJPG' (compressed)\n"
+                          '\tName        : Motion-JPEG\n',
+    },
+}
+"""What ``v4l2-ctl`` prints for a camera offering YUYV and MJPEG, keyed by the v4l2-ctl argument."""
+
+
+def fake_v4l(outputs: dict[str, str]):
+    """Stand-in for `UsbDevice.run_v4l` answering from the given outputs."""
+    async def run_v4l(_self, *args) -> str:
+        return outputs.get(' '.join(args), '')
+    return run_v4l
+
+
 async def test_usb_device_reconnects_after_disconnect(rosys_integration):
     captures: list[FakeCapture] = []
 
@@ -431,13 +464,44 @@ async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(ros
                            reconnect_interval=0.3)
         try:
             await forward_until(probing.is_set, real_step=0.02, message='device did not probe its formats')
-            await device.shutdown()
+            shutdown = asyncio.ensure_future(device.shutdown())
+            await asyncio.sleep(0)  # let shutdown() cancel the capture task before the probe finishes
             finish_probe.set()
+            await shutdown
+            assert not device.is_active, 'shutdown did not end the capture task in time'
             for _ in range(5):
                 await forward(0.3)
                 await asyncio.sleep(0.02)
             assert not device.is_connected
             assert not frames, 'the capture loop resumed streaming after shutdown'
+        finally:
+            await device.shutdown()
+
+
+@pytest.mark.parametrize('outputs', V4L2_CTL_OUTPUTS.values(), ids=V4L2_CTL_OUTPUTS.keys())
+async def test_usb_device_switches_to_mjpeg_when_the_camera_offers_it(rosys_integration, outputs: dict[str, str]):
+    captures: list[FakeCapture] = []
+
+    def make_capture(_device_node: str) -> FakeCapture:
+        capture = FakeCapture()
+        captures.append(capture)
+        return capture
+
+    frames: list = []
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch.object(UsbDevice, 'run_v4l', fake_v4l(outputs)), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
+                           reconnect_interval=0.3)
+        try:
+            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
+                                message='device did not capture any frames')
+            assert device.video_formats == {'YUYV', 'MJPG'}
+            assert device.image_is_jpg
+            assert captures[0].props[cv2.CAP_PROP_FOURCC] == MJPG, 'capture was not switched to MJPEG'
+            assert captures[0].props[cv2.CAP_PROP_BUFFERSIZE] == 1
+            assert isinstance(frames[0], bytes), 'MJPEG frames should be passed on as JPEG bytes'
+            assert device.get_exposure() is not None, 'manual exposure was not detected'
         finally:
             await device.shutdown()
 
@@ -524,6 +588,28 @@ async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration
             assert captures[-1].props[cv2.CAP_PROP_FRAME_WIDTH] == 640, 'width was not reapplied after reconnect'
             assert captures[-1].props[cv2.CAP_PROP_FRAME_HEIGHT] == 480, 'height was not reapplied after reconnect'
             assert captures[-1].props[cv2.CAP_PROP_FPS] == 5, 'fps was not reapplied after reconnect'
+        finally:
+            await camera.disconnect()
+
+
+async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_integration):
+    class JpegCapture(FakeCapture):
+        def __init__(self) -> None:
+            super().__init__()
+            self._frame = np.frombuffer(JPEG_FRAME, dtype=np.uint8).reshape(1, -1)  # read() yields raw JPEG bytes
+
+    cpu_bound = AsyncMock()
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: JpegCapture()), \
+            patch.object(UsbDevice, 'run_v4l', fake_v4l(V4L2_CTL_OUTPUTS['current'])), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch('rosys.run.cpu_bound', cpu_bound):
+        camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
+        await camera.connect()
+        try:
+            await forward_until(lambda: bool(camera.images), step=0.1, real_step=0.02, attempts=15,
+                                message='camera did not decode any MJPEG frame')
+            assert camera.images[0].array.shape == (8, 8, 3)
+            cpu_bound.assert_not_called()
         finally:
             await camera.disconnect()
 
