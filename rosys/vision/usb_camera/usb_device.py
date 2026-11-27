@@ -190,21 +190,25 @@ class UsbDevice(CaptureDevice):
         return await rosys.run.sh(cmd)
 
     def set_video_format(self) -> None:
-        if self._capture is None:
+        self._image_is_jpg = False
+        if self._capture is None or 'MJPG' not in self._video_formats:
             return
-        if 'MJPG' in self._video_formats:
-            # NOTE enforcing motion jpeg for now
-            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            self._image_is_jpg = True
-        else:
-            self._image_is_jpg = False
+        # NOTE enforcing motion jpeg for now
+        if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+            self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:  # the driver may refuse MJPEG, e.g. at this resolution
+                self.log.warning('[%s] could not switch to MJPEG; staying with the raw format', self.uid)
+                return
+        # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
+        if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+            self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:  # decoded frames must not pass as JPEG bytes
+                self.log.warning('[%s] could not disable frame decoding; passing on decoded MJPEG frames', self.uid)
+                return
+        # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
+        if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+            self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        self._image_is_jpg = True
 
     def set_auto_exposure(self, auto: bool) -> None:
         if self._capture is None:

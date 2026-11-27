@@ -400,6 +400,13 @@ def fake_v4l(outputs: dict[str, str]):
     return run_v4l
 
 
+@pytest.fixture(autouse=True)
+def no_v4l2_ctl():
+    """Keep every test from shelling out to the host's v4l2-ctl; a test that needs its output patches `run_v4l` itself."""
+    with patch.object(UsbDevice, 'run_v4l', fake_v4l({})):
+        yield
+
+
 async def test_usb_device_reconnects_after_disconnect(rosys_integration):
     captures: list[FakeCapture] = []
 
@@ -593,6 +600,31 @@ async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration
             assert captures[-1].props[cv2.CAP_PROP_FPS] == 5, 'fps was not reapplied after reconnect'
         finally:
             await camera.disconnect()
+
+
+async def test_usb_device_stays_with_the_raw_format_when_the_driver_refuses_mjpeg(rosys_integration):
+    class StubbornCapture(FakeCapture):
+        def set(self, prop, value) -> bool:
+            if prop == cv2.CAP_PROP_FOURCC:
+                return False  # e.g. MJPEG is not available at the configured resolution
+            return super().set(prop, value)
+
+    frames: list = []
+    capture = StubbornCapture()
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: capture), \
+            patch.object(UsbDevice, 'run_v4l', fake_v4l(V4L2_CTL_OUTPUTS['current'])), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
+                           reconnect_interval=0.3)
+        try:
+            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
+                                message='device did not capture any frames')
+            assert 'MJPG' in device.video_formats
+            assert not device.image_is_jpg, 'frames counted as JPEG although the FOURCC switch was refused'
+            assert cv2.CAP_PROP_CONVERT_RGB not in capture.props, 'frame decoding was disabled without MJPEG'
+            assert isinstance(frames[0], np.ndarray), 'decoded frames should be passed on as arrays'
+        finally:
+            await device.shutdown()
 
 
 async def test_usb_camera_decodes_mjpeg_frames_without_the_process_pool(rosys_integration):
